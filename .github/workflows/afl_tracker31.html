@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>AFL U9 & 10</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --hdr:44px;--ctrl:52px;--bench-w:200px;
+  --c-bg:#0f1a14;--c-panel:#141f18;--c-card:#1c2b21;--c-border:#2a3f30;
+  --c-text:#e8f0eb;--c-muted:#7a9a82;--c-accent:#f0b840;
+  --font:'Barlow Condensed',sans-serif;--fontb:'Barlow',sans-serif;
+  --radius:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--c-bg);color:var(--c-text);font-family:var(--font)}
+
+/* ── HEADER ── */
+#hdr{position:fixed;top:0;left:0;right:0;height:var(--hdr);background:rgba(15,26,20,.97);border-bottom:1px solid var(--c-border);display:flex;align-items:center;padding:0 10px;gap:8px;z-index:200}
+#hdr-title{font-size:15px;font-weight:800;letter-spacing:.5px;color:var(--c-accent);white-space:nowrap}
+#hdr-sub{font-size:10px;color:var(--c-muted);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.nav-btn{padding:5px 10px;font-size:11px;font-weight:700;font-family:var(--font);letter-spacing:.5px;border:1px solid var(--c-border);border-radius:6px;background:transparent;color:var(--c-muted);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.nav-btn.active{background:var(--c-accent);border-color:var(--c-accent);color:#000}
+.nav-btn:hover:not(.active){color:var(--c-text);border-color:var(--c-text)}
+
+/* ── TABS ── */
+.tab{position:fixed;top:var(--hdr);left:0;right:0;bottom:0;overflow:hidden;display:none}
+.tab.active{display:flex}
+
+/* ══ ROSTER TAB ══ */
+#tab-roster{flex-direction:column;overflow-y:auto;padding:14px;gap:10px}
+.section-title{font-size:12px;font-weight:700;color:var(--c-muted);letter-spacing:1px;text-transform:uppercase}
+.add-row{display:flex;gap:8px}
+.tinput{flex:1;background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);padding:9px 12px;font-size:14px;font-family:var(--font);color:var(--c-text);outline:none}
+.tinput:focus{border-color:var(--c-accent)}
+.addbtn{padding:9px 16px;background:var(--c-accent);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;font-family:var(--font);color:#000;cursor:pointer}
+.rost-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px}
+.rcard{background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);padding:9px 10px;display:flex;align-items:center;gap:8px}
+.ravi{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.rname{font-size:13px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdel{width:20px;height:20px;border-radius:50%;background:rgba(220,60,60,.15);border:1px solid rgba(220,60,60,.3);color:#e05252;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.rules-card{background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.ri{font-size:11px;color:var(--c-muted);display:flex;align-items:center;gap:5px}
+.rdot{width:4px;height:4px;border-radius:50%;background:var(--c-accent);flex-shrink:0}
+
+/* ══ GAME TAB — shared ctrl strip ══ */
+#tab-game{flex-direction:column}
+#ctrl{height:var(--ctrl);background:rgba(20,31,24,.98);border-bottom:1px solid var(--c-border);display:flex;align-items:center;padding:0 8px;gap:6px;flex-shrink:0;overflow:hidden}
+#qbar{display:flex;gap:3px;flex-shrink:0}
+.qbtn{width:30px;height:26px;border-radius:5px;border:1px solid var(--c-border);background:transparent;color:var(--c-muted);font-size:10px;font-weight:700;font-family:var(--font);cursor:pointer}
+.qbtn.active{color:#000;border-color:transparent}
+.qbtn.done{opacity:.5}
+.ctrl-div{width:1px;height:22px;background:var(--c-border);flex-shrink:0}
+#tdisp{font-size:24px;font-weight:800;color:var(--c-accent);letter-spacing:1px;min-width:56px;text-align:center;flex-shrink:0}
+#tmeta{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+#tlbl{font-size:10px;color:var(--c-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#trem{font-size:10px;color:var(--c-text);font-weight:600}
+.stat-pill{background:var(--c-card);border:1px solid var(--c-border);border-radius:6px;padding:2px 6px;text-align:center;flex-shrink:0}
+.sp-val{font-size:12px;font-weight:800}
+.sp-lbl{font-size:8px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px}
+.cb{padding:4px 8px;font-size:10px;font-weight:700;font-family:var(--font);border:1px solid var(--c-border);border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.cb.start{background:rgba(16,185,129,.15);border-color:#10b981;color:#10b981}
+.cb.start:disabled{opacity:.4;cursor:default}
+.cb.pause{background:rgba(240,184,64,.15);border-color:var(--c-accent);color:var(--c-accent)}
+.cb.pause:disabled{opacity:.4;cursor:default}
+.cb.endq{background:rgba(74,144,226,.15);border-color:#4a90e2;color:#4a90e2}
+
+/* ══ DESKTOP/TABLET GAME VIEW ══ */
+#game-desktop{flex:1;display:flex;flex-direction:row;overflow:hidden;position:relative}
+#oval-area{flex:1;overflow:hidden;background:#0a1510;transform-origin:center center;transition:transform .3s ease}
+#oval-svg{width:100%;height:100%}
+#bench{width:var(--bench-w);background:var(--c-panel);border-left:1px solid var(--c-border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#bench-hdr{padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--c-muted);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#bench-list{flex:1;overflow-y:auto;padding:6px}
+.bchip{background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;margin-bottom:6px;padding:8px;cursor:grab;user-select:none;position:relative}
+.bchip:active{cursor:grabbing}
+.bchip.placed{opacity:.55;cursor:grab;}
+.bchip-top{display:flex;align-items:center;gap:7px}
+.bavi{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.bname{font-size:13px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btime-wrap{margin-top:5px;display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.btime-box{background:rgba(0,0,0,.25);border-radius:4px;padding:2px 4px;text-align:center}
+.btime-lbl{font-size:8px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.3px}
+.btime-val{font-size:11px;font-weight:700;color:var(--c-text)}
+.bplaced-lbl{font-size:9px;color:var(--c-muted);margin-top:3px;text-align:center}
+.bench-suggest-btn{padding:6px 12px;font-size:11px;font-weight:700;font-family:var(--font);border:1px solid var(--c-accent);border-radius:7px;background:transparent;color:var(--c-accent);cursor:pointer;min-height:34px}
+.bench-ic-btn{padding:6px 12px;font-size:11px;font-weight:700;font-family:var(--font);border:1px solid #10b981;border-radius:7px;background:transparent;color:#10b981;cursor:pointer;min-height:34px}
+.bench-ic-btn.active{background:#10b981;color:#000}
+
+/* interchange panel — sits below bench-hdr, above bench-list */
+#ic-panel{display:none;flex-direction:column;border-bottom:1px solid var(--c-border);max-height:55vh;overflow-y:auto;flex-shrink:0}
+#ic-panel.open{display:flex}
+#ic-panel-hdr{padding:6px 10px;background:rgba(16,185,129,.08);border-bottom:1px solid rgba(16,185,129,.2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#ic-panel-title{font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;text-transform:uppercase}
+#ic-panel-close{background:none;border:none;color:var(--c-muted);cursor:pointer;font-size:13px;padding:0}
+.ic-swap{display:flex;align-items:center;gap:0;padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.05);cursor:grab;user-select:none;transition:background .12s,border-color .12s;border-left:3px solid transparent;border-radius:4px}
+.ic-swap:last-child{border-bottom:none}
+.ic-swap:hover{background:rgba(16,185,129,.06);border-left-color:#10b981}
+.ic-swap.dragging{opacity:.5;cursor:grabbing}
+.ic-drag-hint{font-size:8px;color:rgba(16,185,129,.5);text-align:center;padding:4px 8px;letter-spacing:.3px}
+.ic-player{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0}
+.ic-avi{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.ic-name{font-size:11px;font-weight:700;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.ic-meta{font-size:8px;color:var(--c-muted);text-align:center}
+.ic-arrow{font-size:14px;color:#10b981;flex-shrink:0;padding:0 4px;font-weight:700}
+.ic-zone-tag{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;margin-top:1px}
+.ic-zone-tag.B{background:rgba(224,112,80,.2);color:#e08060}
+.ic-zone-tag.M{background:rgba(80,212,144,.2);color:#3db87a}
+.ic-zone-tag.F{background:rgba(144,128,248,.2);color:#a090f0}
+.ic-apply-btn{padding:3px 8px;font-size:9px;font-weight:700;font-family:var(--font);border:1px solid #10b981;border-radius:5px;background:rgba(16,185,129,.1);color:#10b981;cursor:pointer;flex-shrink:0}
+.ic-apply-btn:active{background:#10b981;color:#000}
+#ic-apply-all{width:calc(100% - 16px);margin:6px 8px;padding:8px;font-size:11px;font-weight:700;font-family:var(--font);border:none;border-radius:7px;background:#10b981;color:#000;cursor:pointer}
+
+/* mobile interchange panel */
+#mb-ic-panel{display:none;border-top:1px solid var(--c-border);flex-shrink:0;max-height:45vh;overflow-y:auto}
+#mb-ic-panel.open{display:block}
+#mb-ic-panel-hdr{padding:6px 10px;background:rgba(16,185,129,.08);display:flex;align-items:center;justify-content:space-between}
+.mb-ic-title{font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;text-transform:uppercase}
+.mb-ic-close{background:none;border:none;color:var(--c-muted);cursor:pointer;font-size:13px}
+#mb-ic-list{padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+#mb-ic-apply-all{width:calc(100% - 16px);margin:0 8px 8px;padding:8px;font-size:11px;font-weight:700;font-family:var(--font);border:none;border-radius:7px;background:#10b981;color:#000;cursor:pointer}
+
+/* lineup drawer */
+#lineup-drawer{position:absolute;top:0;right:0;bottom:0;width:260px;background:var(--c-panel);border-left:1px solid var(--c-border);z-index:100;display:none;flex-direction:column;overflow:hidden}
+#lineup-drawer.open{display:flex}
+#lu-drawer-hdr{padding:10px 12px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#lu-drawer-body{flex:1;overflow-y:auto;padding:10px}
+.lu-draw-zone{margin-bottom:10px}
+.lu-draw-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--c-card);border:1px solid var(--c-border);margin-bottom:4px}
+.lu-draw-pos{font-size:9px;color:var(--c-muted);width:36px;flex-shrink:0}
+.lu-draw-avi{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0}
+.lu-draw-name{font-size:12px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lu-draw-time{font-size:10px;color:var(--c-muted);flex-shrink:0}
+.lu-apply-draw{width:100%;margin-top:8px;padding:9px;font-size:12px;font-weight:700;font-family:var(--font);border:none;border-radius:7px;background:var(--c-accent);color:#000;cursor:pointer}
+
+/* drag ghost */
+#drag-ghost{position:fixed;pointer-events:none;z-index:999;display:none;background:var(--c-card);border:2px solid var(--c-accent);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;font-family:var(--font);color:var(--c-accent);opacity:.9;white-space:nowrap}
+
+/* ══ MOBILE GAME VIEW ══ */
+#game-mobile{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#mobile-field{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;transform-origin:center center;transition:transform .3s ease}
+.mzone{border-radius:10px;overflow:hidden;flex-shrink:0}
+.mzone-hdr{padding:7px 10px;display:flex;align-items:center;justify-content:space-between}
+.mzone-lbl{font-size:11px;font-weight:800;letter-spacing:1px}
+.mzone-cnt{font-size:10px;font-weight:700;opacity:.7}
+.mzone.back .mzone-hdr{background:rgba(224,112,80,.25)}
+.mzone.mid  .mzone-hdr{background:rgba(80,212,144,.2)}
+.mzone.fwd  .mzone-hdr{background:rgba(144,128,248,.25)}
+.mzone.back .mzone-lbl{color:#e08060}
+.mzone.mid  .mzone-lbl{color:#3db87a}
+.mzone.fwd  .mzone-lbl{color:#a090f0}
+.mzone-slots{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px;background:rgba(255,255,255,.03);border:1px solid var(--c-border);border-top:none;border-radius:0 0 10px 10px}
+.mslot{border-radius:8px;border:1.5px dashed rgba(255,255,255,.2);min-height:72px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;background:rgba(255,255,255,.03);transition:border-color .15s,transform .1s;position:relative}
+.mslot:active{opacity:.8}
+.mslot.filled{border-style:solid;border-color:transparent}
+.mslot.drag-over-empty{border-color:#fff !important;border-style:dashed !important;background:rgba(255,255,255,.1) !important;}
+.mslot.drag-over-swap{border-color:#f0b840 !important;border-style:solid !important;background:rgba(240,184,64,.15) !important;}
+.mslot.dragging-source{opacity:.4;transform:scale(.97);}
+#mobile-drag-ghost{position:fixed;pointer-events:none;z-index:999;display:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:800;font-family:var(--font);color:#fff;opacity:.93;white-space:nowrap;border:2px solid rgba(255,255,255,.4);min-width:80px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.mslot-pos{font-size:8px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.mslot-empty-icon{font-size:18px;color:rgba(255,255,255,.15);margin-bottom:2px}
+.mslot-empty-lbl{font-size:9px;color:rgba(255,255,255,.25)}
+/* filled slot content */
+.mslot-name{font-size:13px;font-weight:800;color:#fff;text-align:center;line-height:1.1;margin-bottom:4px;width:100%}
+.mslot-times{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%}
+.mslot-tbox{background:rgba(0,0,0,.25);border-radius:3px;padding:2px 3px;text-align:center}
+.mslot-tlbl{font-size:7px;opacity:.6;text-transform:uppercase;letter-spacing:.2px}
+.mslot-tval{font-size:10px;font-weight:800}
+
+/* mobile bench */
+#mobile-bench{background:var(--c-panel);border-top:1px solid var(--c-border);flex-shrink:0}
+#mb-hdr{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--c-border)}
+#mb-hdr-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--c-muted)}
+#mb-suggest{padding:8px 14px;font-size:12px;font-weight:700;font-family:var(--font);border:1px solid var(--c-accent);border-radius:8px;background:transparent;color:var(--c-accent);cursor:pointer;margin-left:auto;min-height:36px}
+#mb-bench-list{display:flex;gap:5px;padding:6px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;min-height:60px;align-items:center}
+.mbchip{background:var(--c-card);border:1px solid var(--c-border);border-radius:7px;padding:5px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;min-width:56px;transition:border-color .15s}
+.mbchip:active{opacity:.7}
+.mbchip.placed{opacity:.35;pointer-events:none}
+.mbchip-avi{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800}
+.mbchip-name{font-size:9px;font-weight:700;text-align:center;white-space:nowrap;max-width:56px;overflow:hidden;text-overflow:ellipsis}
+.mbchip-time{font-size:8px;color:var(--c-muted);text-align:center}
+
+/* ══ MODAL ══ */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+#modal-overlay.hidden{display:none}
+#modal{background:var(--c-panel);border:1px solid var(--c-border);border-radius:16px 16px 0 0;width:100%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+#modal-hdr{padding:14px 16px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#modal-title{font-size:15px;font-weight:800}
+#modal-sub{font-size:11px;color:var(--c-muted)}
+#modal-close{width:26px;height:26px;border-radius:50%;background:var(--c-card);border:1px solid var(--c-border);color:var(--c-muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+#modal-list{overflow-y:auto;padding:8px}
+.mpbtn{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:1px solid transparent;border-radius:8px;padding:10px;cursor:pointer;transition:background .12s;margin-bottom:2px}
+.mpbtn:hover,.mpbtn:active{background:rgba(255,255,255,.05)}
+.mpbtn.current{border-color:var(--c-accent);background:rgba(240,184,64,.08)}
+.mpbtn.onfield{opacity:.5;cursor:not-allowed;pointer-events:none}
+.mpname{font-size:14px;font-weight:700;color:var(--c-text);text-align:left}
+.mpstatus{font-size:10px;color:var(--c-muted);text-align:left}
+.mptime{font-size:12px;font-weight:700;color:var(--c-muted);flex-shrink:0}
+.pavi{border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* quarter-end banner */
+#qend-banner{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;display:none;align-items:center;justify-content:center}
+#qend-banner.show{display:flex}
+#qend-inner{background:var(--c-panel);border:2px solid var(--c-accent);border-radius:16px;padding:28px 32px;text-align:center}
+#qend-inner h2{font-size:32px;font-weight:800;color:var(--c-accent);margin-bottom:4px}
+#qend-inner p{font-size:14px;color:var(--c-muted);margin-bottom:18px}
+#qend-inner button{padding:11px 28px;background:var(--c-accent);border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:var(--font);color:#000;cursor:pointer}
+
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,31,24,.97);border:1px solid var(--c-accent);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;color:var(--c-accent);opacity:0;transition:opacity .2s;z-index:900;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+
+/* swap highlight on tokens */
+.tok-swap-target rect{filter:brightness(1.35);stroke:#f0b840 !important;stroke-width:3 !important;}
+.tok-swap-target-mobile{outline:3px solid #f0b840 !important;outline-offset:2px;}
+
+/* ══ REPORT TAB ══ */
+#tab-report{flex-direction:column;overflow-y:auto;padding:12px;gap:10px}
+.rep-summary{display:flex;gap:8px;flex-wrap:wrap}
+.rep-summary-pill{background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--c-muted);flex:1;min-width:90px;text-align:center}
+.rep-summary-pill b{display:block;font-size:18px;font-weight:800;color:var(--c-text);margin-bottom:1px}
+.rep-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--c-border)}
+.rep-table{width:100%;border-collapse:collapse;font-family:var(--font);font-size:13px}
+.rep-table thead tr{background:rgba(255,255,255,.04);border-bottom:2px solid var(--c-border)}
+.rep-table th{padding:9px 10px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--c-muted);white-space:nowrap}
+.rep-table th.th-name{text-align:left;padding-left:10px}
+.rep-table th.th-sort{color:var(--c-accent);cursor:pointer}
+.rep-table th.th-sort:hover{color:#fff}
+.rep-table tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s}
+.rep-table tbody tr:last-child{border-bottom:none}
+.rep-table tbody tr:hover{background:rgba(255,255,255,.03)}
+.rep-table td{padding:8px 10px;text-align:center;white-space:nowrap}
+.rep-table td.td-name{text-align:left;padding-left:10px}
+.rep-rank{font-size:11px;font-weight:700;color:var(--c-muted);width:24px;text-align:right;padding-right:4px}
+.rep-avi{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;vertical-align:middle;margin-right:6px;flex-shrink:0}
+.rep-pname{font-size:13px;font-weight:700;vertical-align:middle}
+.rep-total{font-size:13px;font-weight:800;color:var(--c-accent)}
+.rep-tog-pct{font-size:12px;font-weight:800;}
+.rep-tog-pct.high{color:#10b981}
+.rep-tog-pct.mid{color:#f0b840}
+.rep-tog-pct.low{color:#ef4444}
+.rep-q{font-size:12px;font-weight:600;color:var(--c-text)}
+.rep-q.zero{color:var(--c-border)}
+.rep-zone{font-size:12px;font-weight:700}
+.rep-zone.B{color:#e08060}
+.rep-zone.M{color:#3db87a}
+.rep-zone.F{color:#a090f0}
+.rep-zone.zero{color:var(--c-border)}
+.rep-bar-cell{width:80px;padding:8px 8px}
+.rep-bar{height:5px;background:var(--c-border);border-radius:3px;overflow:hidden}
+.rep-fill{height:100%;border-radius:3px;background:var(--c-accent)}
+.rep-section-hdr{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--c-muted);padding:10px 2px 4px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div id="hdr-title">🏉 AFL U9 &amp; 10</div>
+  <div id="hdr-sub" id="hdr-sub">12-a-side · 4 Zones</div>
+  <button class="nav-btn active" onclick="showTab('roster',this)">Roster</button>
+  <button class="nav-btn" onclick="showTab('game',this)">Game</button>
+  <button class="nav-btn" onclick="showTab('report',this)">Report</button>
+</div>
+
+<!-- ROSTER TAB -->
+<div id="tab-roster" class="tab active">
+  <div class="section-title">Squad</div>
+  <div class="add-row">
+    <input class="tinput" id="new-name" placeholder="Player name..." onkeydown="if(event.key==='Enter')addPlayer()"/>
+    <button class="addbtn" onclick="addPlayer()">+ Add</button>
+  </div>
+  <div class="rost-grid" id="roster-grid"></div>
+  <div class="section-title" style="margin-top:6px">Official Rules</div>
+  <div class="rules-card">
+    <div class="ri"><div class="rdot"></div>12-a-side</div>
+    <div class="ri"><div class="rdot"></div>4 per zone</div>
+    <div class="ri"><div class="rdot"></div>10 min quarters</div>
+    <div class="ri"><div class="rdot"></div>Size 2 synthetic</div>
+    <div class="ri"><div class="rdot"></div>No scores/ladders</div>
+    <div class="ri"><div class="rdot"></div>No player awards</div>
+    <div class="ri"><div class="rdot"></div>Modified tackling</div>
+    <div class="ri"><div class="rdot"></div>1 bounce max</div>
+  </div>
+</div>
+
+<!-- GAME TAB -->
+<div id="tab-game" class="tab">
+
+  <!-- Control strip (shared) -->
+  <div id="ctrl">
+    <div id="qbar"></div>
+    <div class="ctrl-div"></div>
+    <div id="tdisp">0:00</div>
+    <div id="tmeta">
+      <div id="tlbl">Tap a spot to assign players</div>
+      <div id="trem">10:00 left</div>
+    </div>
+    <div class="ctrl-div"></div>
+    <div class="stat-pill"><div class="sp-val" id="sv-on">0</div><div class="sp-lbl">On</div></div>
+    <div class="stat-pill" id="fair-pill"><div class="sp-val" id="sv-fair">—</div><div class="sp-lbl">Fair</div></div>
+    <div style="display:flex;gap:3px">
+      <button class="cb start" id="btn-start" onclick="startTimer()">▶ Start</button>
+      <button class="cb pause" id="btn-pause" onclick="pauseTimer()" disabled>⏸</button>
+      <button class="cb endq" onclick="endQuarter()">✓ End Q</button>
+      <button class="cb" style="border-color:#a090f0;color:#a090f0;background:rgba(144,128,248,.12)" onclick="flipField()" title="Swap Fwds ↔ Backs">⇄ Flip</button>
+    </div>
+  </div>
+
+  <!-- DESKTOP/TABLET: oval view -->
+  <div id="game-desktop">
+    <div id="oval-area">
+      <svg id="oval-svg" viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <radialGradient id="gGrass" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#2d6636"/>
+            <stop offset="100%" stop-color="#1b4422"/>
+          </radialGradient>
+          <pattern id="stripes" patternUnits="userSpaceOnUse" width="34" height="34">
+            <rect width="17" height="34" fill="rgba(0,0,0,0.042)"/>
+          </pattern>
+          <clipPath id="ovalClip"><ellipse cx="350" cy="190" rx="335" ry="178"/></clipPath>
+          <filter id="tok-shadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.5"/></filter>
+        </defs>
+        <ellipse cx="350" cy="190" rx="345" ry="185" fill="#3a3a3a"/>
+        <ellipse cx="350" cy="190" rx="335" ry="178" fill="url(#gGrass)"/>
+        <rect x="15" y="12" width="670" height="356" fill="url(#stripes)" clip-path="url(#ovalClip)"/>
+        <path d="M 15,78 Q 58,12 178,28 Q 238,190 178,352 Q 58,368 15,302 Z" fill="rgba(224,112,80,0.14)" clip-path="url(#ovalClip)"/>
+        <path d="M 685,78 Q 642,12 522,28 Q 462,190 522,352 Q 642,368 685,302 Z" fill="rgba(144,128,248,0.14)" clip-path="url(#ovalClip)"/>
+        <rect x="178" y="0" width="344" height="380" fill="rgba(80,212,144,0.07)" clip-path="url(#ovalClip)"/>
+        <path d="M 178,28 Q 238,190 178,352" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        <path d="M 522,28 Q 462,190 522,352" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        <rect x="258" y="112" width="184" height="156" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <circle cx="350" cy="190" r="36" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <circle cx="350" cy="190" r="3" fill="rgba(255,255,255,0.4)"/>
+        <!-- text layer: counter-flipped when oval is mirrored -->
+        <g id="text-layer">
+          <text id="zlbl-B" x="85"  y="198" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(224,112,80,0.7)"  text-anchor="middle">BACKS</text>
+          <text id="zlbl-M" x="350" y="198" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(80,212,144,0.7)"  text-anchor="middle">MIDS</text>
+          <text id="zlbl-F" x="615" y="198" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(144,128,248,0.7)" text-anchor="middle">FWDS</text>
+          <text id="zcnt-B" x="45"  y="30" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(224,112,80,.9)"  text-anchor="middle">0/4</text>
+          <text id="zcnt-M" x="350" y="30" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(80,212,144,.9)"  text-anchor="middle">0/4</text>
+          <text id="zcnt-F" x="655" y="30" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(144,128,248,.9)" text-anchor="middle">0/4</text>
+        </g>
+        <!-- counter-flip group: stays readable when oval-area is flipped -->
+        <g id="counterflip-layer" transform="">
+          <g id="spots-layer"></g>
+          <g id="tokens-layer"></g>
+        </g>
+      </svg>
+    </div>
+    <!-- Desktop bench -->
+    <div id="bench">
+      <div id="bench-hdr">
+        <span>BENCH</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="bench-ic-btn" id="ic-btn" onclick="toggleInterchangePanel()">⇄ IC</button>
+          <button class="bench-suggest-btn" onclick="openLineupDrawer()">⚡ Lineup</button>
+          <span id="bench-count" style="font-size:10px;color:var(--c-muted)">0</span>
+        </div>
+      </div>
+      <!-- Interchange panel -->
+      <div id="ic-panel">
+        <div id="ic-panel-hdr">
+          <span id="ic-panel-title">⇄ Suggested Interchanges</span>
+          <button id="ic-panel-close" onclick="toggleInterchangePanel()">✕</button>
+        </div>
+        <div id="ic-list"></div>
+        <button id="ic-apply-all" onclick="applyAllInterchanges()">✓ Apply all interchanges</button>
+      </div>
+      <div id="bench-list"></div>
+    </div>
+    <!-- Lineup drawer -->
+    <div id="lineup-drawer">
+      <div id="lu-drawer-hdr">
+        <div style="font-size:12px;font-weight:700;color:var(--c-text)">⚡ Suggested Lineup</div>
+        <button style="background:none;border:none;color:var(--c-muted);cursor:pointer;font-size:14px" onclick="closeLineupDrawer()">✕</button>
+      </div>
+      <div id="lu-drawer-body"></div>
+    </div>
+  </div>
+
+  <!-- MOBILE: card-based zone view -->
+  <div id="game-mobile">
+    <div id="mobile-field">
+      <!-- Back zone -->
+      <div class="mzone back">
+        <div class="mzone-hdr">
+          <span class="mzone-lbl">◀ BACKS</span>
+          <span class="mzone-cnt" id="mcnt-B">0/4</span>
+        </div>
+        <div class="mzone-slots" id="mslots-B">
+          <div class="mslot" onclick="mobileSlotClick('B1')" id="ms-B1"></div>
+          <div class="mslot" onclick="mobileSlotClick('B2')" id="ms-B2"></div>
+          <div class="mslot" onclick="mobileSlotClick('B3')" id="ms-B3"></div>
+          <div class="mslot" onclick="mobileSlotClick('B4')" id="ms-B4"></div>
+        </div>
+      </div>
+      <!-- Mid zone -->
+      <div class="mzone mid">
+        <div class="mzone-hdr">
+          <span class="mzone-lbl">◈ MIDS</span>
+          <span class="mzone-cnt" id="mcnt-M">0/4</span>
+        </div>
+        <div class="mzone-slots" id="mslots-M">
+          <div class="mslot" onclick="mobileSlotClick('M1')" id="ms-M1"></div>
+          <div class="mslot" onclick="mobileSlotClick('M2')" id="ms-M2"></div>
+          <div class="mslot" onclick="mobileSlotClick('M3')" id="ms-M3"></div>
+          <div class="mslot" onclick="mobileSlotClick('M4')" id="ms-M4"></div>
+        </div>
+      </div>
+      <!-- Fwd zone -->
+      <div class="mzone fwd">
+        <div class="mzone-hdr">
+          <span class="mzone-lbl">FWDS ▶</span>
+          <span class="mzone-cnt" id="mcnt-F">0/4</span>
+        </div>
+        <div class="mzone-slots" id="mslots-F">
+          <div class="mslot" onclick="mobileSlotClick('F1')" id="ms-F1"></div>
+          <div class="mslot" onclick="mobileSlotClick('F2')" id="ms-F2"></div>
+          <div class="mslot" onclick="mobileSlotClick('F3')" id="ms-F3"></div>
+          <div class="mslot" onclick="mobileSlotClick('F4')" id="ms-F4"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Mobile bench strip -->
+    <div id="mobile-bench">
+      <div id="mb-hdr">
+        <div id="mb-hdr-lbl">BENCH</div>
+        <span id="mb-cnt" style="font-size:10px;color:var(--c-muted)"></span>
+        <button class="bench-ic-btn" id="mb-ic-btn" onclick="toggleInterchangePanel()">⇄ IC</button>
+        <button id="mb-suggest" onclick="openLineupDrawer()">⚡ Lineup</button>
+      </div>
+      <!-- Mobile interchange panel -->
+      <div id="mb-ic-panel">
+        <div id="mb-ic-panel-hdr">
+          <span class="mb-ic-title">⇄ Suggested Interchanges</span>
+          <button class="mb-ic-close" onclick="toggleInterchangePanel()">✕</button>
+        </div>
+        <div id="mb-ic-list"></div>
+        <button id="mb-ic-apply-all" onclick="applyAllInterchanges()">✓ Apply all interchanges</button>
+      </div>
+      <div id="mb-bench-list"></div>
+    </div>
+  </div>
+
+</div><!-- end tab-game -->
+
+<!-- LINEUP TAB -->
+<!-- REPORT TAB -->
+<div id="tab-report" class="tab">
+  <div class="rep-summary" id="rep-summary"></div>
+  <div class="rep-section-hdr">Time on Ground — Ranked</div>
+  <div class="rep-table-wrap">
+    <table class="rep-table" id="rep-table">
+      <thead>
+        <tr>
+          <th class="th-name" colspan="2">Player</th>
+          <th>Total</th>
+          <th>TOG%</th>
+          <th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th>
+          <th class="rep-zone B">BKS</th>
+          <th class="rep-zone M">MID</th>
+          <th class="rep-zone F">FWD</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rep-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Drag ghost (desktop only) -->
+<div id="drag-ghost"></div>
+<!-- Mobile drag ghost -->
+<div id="mobile-drag-ghost"></div>
+
+<!-- Modal (sheet style) -->
+<div id="modal-overlay" class="hidden" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <div id="modal-hdr">
+      <div><div id="modal-title">Assign Player</div><div id="modal-sub"></div></div>
+      <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-list"></div>
+  </div>
+</div>
+
+<!-- Quarter-end banner -->
+<div id="qend-banner">
+  <div id="qend-inner">
+    <h2 id="qend-title">Q1 END!</h2>
+    <p id="qend-msg">Quarter complete — time to rotate!</p>
+    <button onclick="dismissQEnd()">Continue →</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* ══════════ CONSTANTS ══════════ */
+const COLORS=[
+  ['#4a7fe8','#fff'],['#e07048','#fff'],['#8b5cf6','#fff'],['#10b981','#000'],
+  ['#e85490','#fff'],['#f59e0b','#000'],['#06b6d4','#000'],['#ef4444','#fff'],
+  ['#84cc16','#000'],['#a78bfa','#fff'],['#fb923c','#fff'],['#22d3ee','#000'],
+  ['#f97316','#fff'],['#818cf8','#fff'],['#34d399','#000'],['#f472b6','#fff']
+];
+const Q_SECS=600;
+const MAX_ZONE=4;
+const ZONES=['B','M','F'];
+
+const SPOTS={
+  B1:['B',62,82,'LBP'],  B2:['B',62,298,'RBP'],
+  B3:['B',155,142,'LHB'], B4:['B',155,238,'RHB'],
+  M1:['M',275,104,'LWin'], M2:['M',425,104,'RWin'],
+  M3:['M',275,276,'LHF'],  M4:['M',425,276,'RHF'],
+  F1:['F',545,142,'LHF'], F2:['F',545,238,'RHF'],
+  F3:['F',638,82,'LFP'],  F4:['F',638,298,'RFP'],
+};
+const POS_NAMES={
+  B1:'Left Back Pocket',B2:'Right Back Pocket',B3:'Left Half-back',B4:'Right Half-back',
+  M1:'Left Wing',M2:'Right Wing',M3:'Left Half-forward',M4:'Right Half-forward',
+  F1:'Left Fwd Flank',F2:'Right Fwd Flank',F3:'Left Fwd Pocket',F4:'Right Fwd Pocket'
+};
+const POS_SHORT={
+  B1:'L Back Pkt',B2:'R Back Pkt',B3:'L Half-back',B4:'R Half-back',
+  M1:'L Wing',M2:'R Wing',M3:'L Half-fwd',M4:'R Half-fwd',
+  F1:'L Fwd Flank',F2:'R Fwd Flank',F3:'L Fwd Pkt',F4:'R Fwd Pkt'
+};
+
+/* ══════════ STATE ══════════ */
+let players=[];
+let nextId=1;
+let currentQ=1;
+let timerSecs=0;
+let timerRunning=false;
+let timerInterval=null;
+let quarterDone=[false,false,false,false];
+let luMode='fair';
+let lastSuggestion=null;
+
+/* ══════════ HELPERS ══════════ */
+function isMobile(){
+  // Prefer touch capability + narrow viewport — covers iPhone in all orientations
+  const hasTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const narrow = window.innerWidth < 700;
+  return hasTouch && narrow;
+}
+function ac(p){return COLORS[(p.id-1)%COLORS.length]}
+function fmt(s){const m=Math.floor(s/60),sec=s%60;return`${m}:${sec<10?'0':''}${sec}`}
+function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function totalBanked(p){return Object.values(p.timeByQ).reduce((a,b)=>a+b,0)}
+function totalLive(p){
+  if(!p.onField||!timerRunning||!p.lastToggle)return totalBanked(p);
+  return totalBanked(p)+Math.round((Date.now()-p.lastToggle)/1000);
+}
+function currentTOG(p){
+  if(!p.onField)return 0;
+  if(!timerRunning||!p.lastToggle)return p.currentQStart||0;
+  return (p.currentQStart||0)+Math.round((Date.now()-p.lastToggle)/1000);
+}
+
+/* ══════════ LAYOUT MODE ══════════ */
+function applyLayout(){
+  const mob=isMobile();
+  document.getElementById('game-desktop').style.display=mob?'none':'flex';
+  document.getElementById('game-mobile').style.display=mob?'flex':'none';
+}
+window.addEventListener('resize',()=>{applyLayout();renderGame();});
+
+/* ══════════ PLAYERS ══════════ */
+function addPlayer(){
+  const inp=document.getElementById('new-name');
+  const name=inp.value.trim();if(!name)return;
+  players.push({id:nextId++,name,onField:false,spot:null,zone:null,
+    timeByQ:{1:0,2:0,3:0,4:0},zoneTime:{B:0,M:0,F:0},lastToggle:null,currentQStart:0});
+  inp.value='';
+  renderRoster();renderGame();
+}
+function removePlayer(id){
+  const p=players.find(x=>x.id===id);
+  if(p&&p.onField)removeFromField(p);
+  players=players.filter(x=>x.id!==id);
+  renderRoster();renderGame();
+}
+function removeFromField(p){
+  if(p.lastToggle&&timerRunning){
+    const secs=Math.round((Date.now()-p.lastToggle)/1000);
+    p.timeByQ[currentQ]=(p.timeByQ[currentQ]||0)+secs;
+    p.zoneTime[p.zone]=(p.zoneTime[p.zone]||0)+secs;
+  }
+  p.onField=false;p.spot=null;p.zone=null;p.lastToggle=null;p.currentQStart=0;
+}
+
+function renderRoster(){
+  document.getElementById('roster-grid').innerHTML=players.map(p=>{
+    const[bg,fg]=ac(p);
+    return`<div class="rcard"><div class="ravi" style="background:${bg};color:${fg}">${initials(p.name)}</div><div class="rname">${p.name}</div><div class="rdel" onclick="removePlayer(${p.id})">✕</div></div>`;
+  }).join('');
+}
+
+/* ══════════ ASSIGN ══════════ */
+function assignToSpot(pid,spotId){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  const[z]=SPOTS[spotId];
+  const cur=players.find(x=>x.spot===spotId&&x.id!==pid);
+  if(cur)removeFromField(cur);
+  if(p.onField&&p.spot!==spotId)removeFromField(p);
+  p.onField=true;p.spot=spotId;p.zone=z;
+  p.lastToggle=timerRunning?Date.now():null;
+  p.currentQStart=0;
+  toast(`${p.name.split(' ')[0]} → ${POS_SHORT[spotId]}`);
+  renderGame();
+}
+
+/* ══════════ RENDER GAME (dispatcher) ══════════ */
+function renderGame(){
+  renderQBar();
+  if(isMobile()){renderMobile();}
+  else{renderSpots();renderTokens();renderDesktopBench();}
+  updateStats();
+}
+
+/* ══════════ DESKTOP RENDER ══════════ */
+function renderQBar(){
+  const qc=['#4a90e2','#e07840','#8b5cf6','#10b981'];
+  document.getElementById('qbar').innerHTML=[1,2,3,4].map(q=>{
+    let cls='qbtn';
+    if(q===currentQ)cls+=' active';
+    else if(quarterDone[q-1])cls+=' done';
+    return`<button class="${cls}" style="${q===currentQ?`background:${qc[q-1]};border-color:${qc[q-1]}`:''}" onclick="selectQ(${q})">Q${q}</button>`;
+  }).join('');
+}
+
+function renderSpots(){
+  const taken=new Set(players.filter(p=>p.onField&&p.spot).map(p=>p.spot));
+  let html='';
+  Object.entries(SPOTS).forEach(([sid,[z,cx,cy,lbl]])=>{
+    const occ=taken.has(sid);
+    html+=`<g class="spot" onclick="spotClick('${sid}')" style="cursor:pointer">
+      <circle cx="${cx}" cy="${cy}" r="26" fill="${occ?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)'}" stroke="${occ?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.4)'}" stroke-width="1.5" stroke-dasharray="${occ?'':'4 3'}"/>
+      ${occ?'':`<text x="${cx}" y="${cy+4}" font-family="Barlow Condensed" font-size="9" font-weight="600" fill="rgba(255,255,255,0.4)" text-anchor="middle">${lbl}</text>`}
+    </g>`;
+  });
+  document.getElementById('spots-layer').innerHTML=html;
+}
+
+function renderTokens(){
+  let html='';
+  players.filter(p=>p.onField&&p.spot).forEach(p=>{
+    const[z,cx,cy]=SPOTS[p.spot];
+    const[bg,fg]=ac(p);
+    const tog=fmt(currentTOG(p));
+    const total=fmt(totalLive(p));
+    html+=`<g id="tok-${p.id}" filter="url(#tok-shadow)" style="cursor:pointer">
+      <rect x="${cx-38}" y="${cy-31}" width="76" height="62" rx="8" fill="${bg}" opacity="0.92"/>
+      <text font-family="Barlow Condensed" font-size="12" font-weight="800" fill="${fg}" text-anchor="middle" x="${cx}" y="${cy-14}" pointer-events="none">${p.name.split(' ')[0].toUpperCase()}</text>
+      <line x1="${cx-30}" y1="${cy-4}" x2="${cx+30}" y2="${cy-4}" stroke="${fg}" stroke-opacity="0.2" stroke-width="0.8"/>
+      <text font-family="Barlow Condensed" font-size="8" font-weight="600" fill="${fg}" fill-opacity="0.6" text-anchor="start" x="${cx-30}" y="${cy+7}" pointer-events="none">TOG</text>
+      <text font-family="Barlow Condensed" font-size="11" font-weight="800" fill="${fg}" text-anchor="start" x="${cx-30}" y="${cy+20}" pointer-events="none" id="tog-${p.id}">${tog}</text>
+      <text font-family="Barlow Condensed" font-size="8" font-weight="600" fill="${fg}" fill-opacity="0.6" text-anchor="end" x="${cx+30}" y="${cy+7}" pointer-events="none">TOTAL</text>
+      <text font-family="Barlow Condensed" font-size="11" font-weight="800" fill="${fg}" fill-opacity="0.85" text-anchor="end" x="${cx+30}" y="${cy+20}" pointer-events="none" id="total-${p.id}">${total}</text>
+    </g>`;
+  });
+  document.getElementById('tokens-layer').innerHTML=html;
+  players.filter(p=>p.onField&&p.spot).forEach(p=>{
+    const el=document.getElementById('tok-'+p.id);
+    if(el)attachDragToToken(el,p.id,p.spot);
+  });
+  ZONES.forEach(z=>{
+    const c=players.filter(p=>p.onField&&p.zone===z).length;
+    const el=document.getElementById('zcnt-'+z);if(!el)return;
+    el.textContent=`${c}/4`;
+    el.setAttribute('fill',c>MAX_ZONE?'#e05252':z==='B'?'rgba(224,112,80,.9)':z==='M'?'rgba(80,212,144,.9)':'rgba(144,128,248,.9)');
+  });
+}
+
+function renderDesktopBench(){
+  const el=document.getElementById('bench-count');
+  if(el)el.textContent=players.filter(p=>!p.onField).length;
+  const bl=document.getElementById('bench-list');if(!bl)return;
+  bl.innerHTML=players.map(p=>{
+    const[bg,fg]=ac(p);
+    const placed=p.onField;
+    return`<div class="bchip${placed?' placed':''}" id="bchip-${p.id}" title="${placed?'Drag to swap position':'Drag onto field'}">
+      <div class="bchip-top">
+        <div class="bavi" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+        <div class="bname">${p.name}</div>
+      </div>
+      <div class="btime-wrap">
+        <div class="btime-box"><div class="btime-lbl">TOG</div><div class="btime-val" id="btog-${p.id}">${fmt(currentTOG(p))}</div></div>
+        <div class="btime-box"><div class="btime-lbl">Total</div><div class="btime-val" id="btotal-${p.id}">${fmt(totalLive(p))}</div></div>
+      </div>
+      ${placed?`<div class="bplaced-lbl">${POS_SHORT[p.spot]||p.zone}</div>`:''}
+    </div>`;
+  }).join('');
+  // Attach drag to ALL chips — placed ones know their fromSpot so swaps work
+  players.forEach(p=>{
+    const el=document.getElementById('bchip-'+p.id);
+    if(!el)return;
+    attachBenchDrag(el, p.id, p.onField ? p.spot : null);
+  });
+}
+
+/* ══════════ MOBILE RENDER ══════════ */
+function renderMobile(){
+  // render each slot
+  Object.entries(SPOTS).forEach(([sid,[z,cx,cy,lbl]])=>{
+    const el=document.getElementById('ms-'+sid);if(!el)return;
+    const p=players.find(x=>x.spot===sid);
+    if(p){
+      const[bg,fg]=ac(p);
+      el.className='mslot filled';
+      el.style.background=bg;
+      el.style.borderColor='transparent';
+      el.innerHTML=`
+        <div class="mslot-pos" style="color:${fg};opacity:.6">${POS_SHORT[sid]}</div>
+        <div class="mslot-name" style="color:${fg}">${p.name.split(' ')[0].toUpperCase()}</div>
+        <div class="mslot-times">
+          <div class="mslot-tbox" style="background:rgba(0,0,0,.2)">
+            <div class="mslot-tlbl" style="color:${fg};opacity:.6">TOG</div>
+            <div class="mslot-tval" style="color:${fg}" id="mtog-${p.id}">${fmt(currentTOG(p))}</div>
+          </div>
+          <div class="mslot-tbox" style="background:rgba(0,0,0,.2)">
+            <div class="mslot-tlbl" style="color:${fg};opacity:.6">TOTAL</div>
+            <div class="mslot-tval" style="color:${fg}" id="mtotal-${p.id}">${fmt(totalLive(p))}</div>
+          </div>
+        </div>`;
+    } else {
+      el.className='mslot';
+      el.style.background='';el.style.borderColor='';
+      el.innerHTML=`<div class="mslot-pos">${POS_SHORT[sid]}</div><div class="mslot-empty-icon">+</div><div class="mslot-empty-lbl">Tap to assign</div>`;
+    }
+  });
+  // zone counts
+  ZONES.forEach(z=>{
+    const c=players.filter(p=>p.onField&&p.zone===z).length;
+    const el=document.getElementById('mcnt-'+z);
+    if(el)el.textContent=`${c}/4`;
+  });
+  // mobile bench
+  const offField=players.filter(p=>!p.onField);
+  const mbcnt=document.getElementById('mb-cnt');
+  if(mbcnt)mbcnt.textContent=`${offField.length} left`;
+  const mbl=document.getElementById('mb-bench-list');if(!mbl)return;
+  mbl.innerHTML=players.map(p=>{
+    const[bg,fg]=ac(p);
+    const placed=p.onField;
+    return`<div class="mbchip${placed?' placed':''}" id="mbchip-${p.id}" onclick="${placed?'':'mobileBenchTap('+p.id+')'}">
+      <div class="mbchip-avi" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+      <div class="mbchip-name">${p.name.split(' ')[0]}</div>
+      <div class="mbchip-time" id="mbt-${p.id}">${fmt(totalLive(p))}</div>
+    </div>`;
+  }).join('');
+  // Attach touch-drag to all slots after render
+  attachAllMobileSlotDrags();
+}
+
+/* ══════════ MOBILE SLOT DRAG ══════════ */
+let mDragState = null; // {spotId, pid, startX, startY}
+const M_DRAG_THRESHOLD = 8;
+
+function attachMobileSlotDrag(el, spotId){
+  let startX, startY, didDrag = false;
+
+  el.addEventListener('touchstart', e => {
+    // Only drag filled slots
+    const p = players.find(x => x.spot === spotId);
+    if(!p) return; // empty slots stay as tap-to-assign
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    didDrag = false;
+  }, {passive: true});
+
+  el.addEventListener('touchmove', e => {
+    const tx = e.touches[0].clientX;
+    const ty = e.touches[0].clientY;
+    if(!didDrag && (Math.abs(tx - startX) > M_DRAG_THRESHOLD || Math.abs(ty - startY) > M_DRAG_THRESHOLD)){
+      const p = players.find(x => x.spot === spotId);
+      if(!p) return;
+      didDrag = true;
+      mDragState = {spotId, pid: p.id};
+      startMobileDrag(p, tx, ty);
+    }
+    if(didDrag){
+      e.preventDefault();
+      moveMobileDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, {passive: false});
+
+  el.addEventListener('touchend', e => {
+    if(didDrag){
+      endMobileDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }
+    didDrag = false;
+  });
+}
+
+function startMobileDrag(p, cx, cy){
+  const [bg, fg] = ac(p);
+  const g = document.getElementById('mobile-drag-ghost');
+  g.textContent = p.name.split(' ')[0].toUpperCase();
+  g.style.background = bg;
+  g.style.borderColor = 'rgba(255,255,255,.5)';
+  g.style.color = fg;
+  g.style.display = 'block';
+  // Mark source slot
+  const srcEl = document.getElementById('ms-' + mDragState.spotId);
+  if(srcEl) srcEl.classList.add('dragging-source');
+  moveMobileDrag(cx, cy);
+}
+
+function moveMobileDrag(cx, cy){
+  const g = document.getElementById('mobile-drag-ghost');
+  g.style.left = (cx - 45) + 'px';
+  g.style.top  = (cy - 36) + 'px';
+  highlightMobileTarget(cx, cy);
+}
+
+function endMobileDrag(cx, cy){
+  // Hide ghost
+  const g = document.getElementById('mobile-drag-ghost');
+  g.style.display = 'none';
+  // Remove source highlight
+  document.querySelectorAll('.mslot.dragging-source').forEach(el => el.classList.remove('dragging-source'));
+  clearMobileSlotHighlights();
+
+  if(!mDragState) return;
+  const {spotId: fromSpot, pid} = mDragState;
+  mDragState = null;
+
+  const targetSpot = findMobileSlotAt(cx, cy);
+  if(!targetSpot || targetSpot === fromSpot) return;
+
+  const occupant = players.find(p => p.spot === targetSpot);
+  if(occupant){
+    // Swap the two on-field players
+    swapPlayers(pid, occupant.id, fromSpot, targetSpot);
+  } else {
+    // Move to empty slot
+    assignToSpot(pid, targetSpot);
+  }
+}
+
+function highlightMobileTarget(cx, cy){
+  clearMobileSlotHighlights();
+  const targetSpot = findMobileSlotAt(cx, cy);
+  if(!targetSpot || targetSpot === mDragState?.spotId) return;
+  const el = document.getElementById('ms-' + targetSpot);
+  if(!el) return;
+  const occupant = players.find(p => p.spot === targetSpot);
+  if(occupant){
+    el.classList.add('drag-over-swap');
+    // Update ghost to show swap names
+    const draggingP = players.find(x => x.id === mDragState?.pid);
+    const g = document.getElementById('mobile-drag-ghost');
+    if(draggingP && g){
+      g.textContent = draggingP.name.split(' ')[0] + ' ⇄ ' + occupant.name.split(' ')[0];
+      g.style.borderColor = '#f0b840';
+    }
+  } else {
+    el.classList.add('drag-over-empty');
+    const draggingP = players.find(x => x.id === mDragState?.pid);
+    const g = document.getElementById('mobile-drag-ghost');
+    if(draggingP && g){
+      g.textContent = draggingP.name.split(' ')[0].toUpperCase();
+      g.style.borderColor = 'rgba(255,255,255,.5)';
+    }
+  }
+}
+
+function clearMobileSlotHighlights(){
+  document.querySelectorAll('.mslot.drag-over-empty, .mslot.drag-over-swap').forEach(el => {
+    el.classList.remove('drag-over-empty', 'drag-over-swap');
+  });
+}
+
+function findMobileSlotAt(cx, cy){
+  // Check all slot elements for the one under the touch point
+  for(const sid of Object.keys(SPOTS)){
+    const el = document.getElementById('ms-' + sid);
+    if(!el) continue;
+    const r = el.getBoundingClientRect();
+    if(cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom){
+      return sid;
+    }
+  }
+  return null;
+}
+
+/* Attach drag handlers to all mobile slots after render */
+function attachAllMobileSlotDrags(){
+  Object.keys(SPOTS).forEach(sid => {
+    const el = document.getElementById('ms-' + sid);
+    if(el) attachMobileSlotDrag(el, sid);
+  });
+}
+
+/* Mobile slot tap → open modal (supports swap if occupied) */
+function mobileSlotClick(spotId){
+  const occupant = players.find(p=>p.spot===spotId);
+  if(occupant && mobilePendingPlayer){
+    // A bench player was pre-selected — do the swap directly
+    const bp = players.find(x=>x.id===mobilePendingPlayer);
+    if(bp && !bp.onField){
+      closeModal();
+      swapBenchWithField(mobilePendingPlayer, occupant.id, spotId);
+      mobilePendingPlayer = null;
+      return;
+    }
+  }
+  openModal(spotId);
+}
+
+/* Mobile bench chip tap → show "move to which spot?" — reuse modal with bench player pre-highlighted */
+let mobilePendingPlayer=null;
+function mobileBenchTap(pid){
+  mobilePendingPlayer=pid;
+  // Open a zone picker first
+  openZonePicker(pid);
+}
+
+function openZonePicker(pid){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  const[bg,fg]=ac(p);
+  // Find empty spots
+  const empty=Object.entries(SPOTS).filter(([sid])=>!players.find(x=>x.spot===sid));
+  document.getElementById('modal-title').textContent=`Place ${p.name.split(' ')[0]}`;
+  document.getElementById('modal-sub').textContent='Choose a position';
+  document.getElementById('modal-list').innerHTML=empty.map(([sid,[z]])=>{
+    const zName=z==='B'?'Backs':z==='M'?'Mids':'Fwds';
+    const zColor=z==='B'?'rgba(224,112,80,.15)':z==='M'?'rgba(80,212,144,.12)':'rgba(144,128,248,.15)';
+    const zText=z==='B'?'#e08060':z==='M'?'#3db87a':'#a090f0';
+    return`<button class="mpbtn" onclick="mobilePlacePlayer(${pid},'${sid}')" style="background:${zColor}">
+      <div class="pavi" style="background:${bg};color:${fg};width:26px;height:26px;font-size:9px">${initials(p.name)}</div>
+      <div style="flex:1"><div class="mpname" style="color:${zText}">${zName}</div><div class="mpstatus">${POS_SHORT[sid]}</div></div>
+    </button>`;
+  }).join('')||`<div style="padding:16px;color:var(--c-muted);font-size:13px;text-align:center">All spots are filled.</div>`;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function mobilePlacePlayer(pid,spotId){
+  closeModal();
+  assignToSpot(pid,spotId);
+}
+
+/* ══════════ TICK CLOCKS ══════════ */
+function tickClocks(){
+  if(isMobile()){
+    players.filter(p=>p.onField&&p.spot).forEach(p=>{
+      const te=document.getElementById('mtog-'+p.id);
+      const tt=document.getElementById('mtotal-'+p.id);
+      if(te)te.textContent=fmt(currentTOG(p));
+      if(tt)tt.textContent=fmt(totalLive(p));
+    });
+    players.forEach(p=>{
+      const bt=document.getElementById('mbt-'+p.id);
+      if(bt)bt.textContent=fmt(totalLive(p));
+    });
+  } else {
+    players.filter(p=>p.onField&&p.spot).forEach(p=>{
+      const te=document.getElementById('tog-'+p.id);
+      const tt=document.getElementById('total-'+p.id);
+      if(te)te.textContent=fmt(currentTOG(p));
+      if(tt)tt.textContent=fmt(totalLive(p));
+    });
+    players.forEach(p=>{
+      const bt=document.getElementById('btog-'+p.id);
+      const btt=document.getElementById('btotal-'+p.id);
+      if(bt)bt.textContent=fmt(currentTOG(p));
+      if(btt)btt.textContent=fmt(totalLive(p));
+    });
+  }
+  // Live-update report tab if it's visible
+  if(document.getElementById('tab-report').classList.contains('active')){
+    tickReport();
+  }
+  updateStats();
+}
+
+function tickReport(){
+  // Update total, TOG%, and zone columns for all players
+  players.forEach(p=>{
+    const totalEl=document.getElementById('rep-total-'+p.id);
+    if(totalEl) totalEl.textContent=fmt(totalLive(p));
+    // TOG%
+    const pctEl=document.getElementById('rep-pct-'+p.id);
+    if(pctEl){
+      const tpct=togPct(p);
+      pctEl.textContent=tpct+'%';
+      pctEl.className='rep-tog-pct '+togPctClass(tpct);
+    }
+    const curQEl=document.getElementById('rep-q'+currentQ+'-'+p.id);
+    if(curQEl){
+      const t=(p.timeByQ[currentQ]||0)+(p.onField&&p.lastToggle?Math.round((Date.now()-p.lastToggle)/1000):0);
+      curQEl.textContent=t>0?fmt(t):'—';
+      curQEl.className='rep-q'+(t===0?' zero':'');
+    }
+    ['B','M','F'].forEach(z=>{
+      const zEl=document.getElementById('rep-zone-'+z+'-'+p.id);
+      if(!zEl) return;
+      const banked=p.zoneTime[z]||0;
+      const live=p.onField&&p.zone===z&&p.lastToggle&&timerRunning?Math.round((Date.now()-p.lastToggle)/1000):0;
+      const t=banked+live;
+      zEl.textContent=t>0?fmt(t):'—';
+      zEl.className='rep-zone '+z+(t===0?' zero':'');
+    });
+  });
+  // Re-sort rank indicators
+  const sorted=[...players].sort((a,b)=>totalLive(b)-totalLive(a));
+  sorted.forEach((p,i)=>{
+    const rankEl=document.getElementById('rep-rank-'+p.id);
+    if(rankEl){
+      rankEl.textContent=i+1;
+      rankEl.style.color=i===0?'#f0b840':i===1?'#b0bec5':i===2?'#cd8c52':'var(--c-muted)';
+    }
+  });
+  // Update summary pills
+  const times=players.map(totalLive);
+  const spread=Math.max(...times)-Math.min(...times);
+  const spreadEl=document.getElementById('rep-spread');
+  if(spreadEl) spreadEl.textContent=fmt(spread);
+  const avgTime=Math.round(times.reduce((a,b)=>a+b,0)/(players.length||1));
+  const avgEl=document.getElementById('rep-avg');
+  if(avgEl) avgEl.textContent=fmt(avgTime);
+  const elapsed=elapsedGameSecs();
+  const avgPctEl=document.getElementById('rep-avg-pct');
+  if(avgPctEl) avgPctEl.textContent=(elapsed?Math.round(avgTime/elapsed*100):0)+'%';
+}
+
+function updateStats(){
+  document.getElementById('sv-on').textContent=players.filter(p=>p.onField).length;
+  if(players.length>1){
+    const times=players.map(totalLive);
+    const spread=Math.max(...times)-Math.min(...times);
+    const fair=spread>120?'Review':spread>60?'OK':'Good';
+    const pill=document.getElementById('fair-pill');
+    if(pill)pill.style.borderColor=spread>120?'#ef4444':spread>60?'#f59e0b':'#10b981';
+    document.getElementById('sv-fair').textContent=fair;
+  }
+}
+
+/* ══════════ TIMER ══════════ */
+function selectQ(q){
+  if(timerRunning)return;
+  currentQ=q;timerSecs=0;
+  document.getElementById('tdisp').textContent='0:00';
+  document.getElementById('tlbl').textContent=`Quarter ${q} — ready`;
+  document.getElementById('trem').textContent='10:00 left';
+  renderGame();
+}
+
+function startTimer(){
+  if(timerRunning)return;
+  timerRunning=true;
+  const now=Date.now();
+  players.filter(p=>p.onField).forEach(p=>{p.lastToggle=now;});
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-pause').disabled=false;
+  document.getElementById('tlbl').textContent=`Quarter ${currentQ} — running`;
+  timerInterval=setInterval(()=>{
+    timerSecs++;
+    document.getElementById('tdisp').textContent=fmt(timerSecs);
+    document.getElementById('trem').textContent=`${fmt(Math.max(0,Q_SECS-timerSecs))} left`;
+    tickClocks();
+    // Refresh interchange panel every 30s while open
+    if(icPanelOpen && timerSecs % 30 === 0) renderInterchangePanel();
+    if(timerSecs>=Q_SECS)autoEndQuarter();
+  },1000);
+}
+
+function pauseTimer(){
+  if(!timerRunning)return;
+  clearInterval(timerInterval);timerRunning=false;
+  const now=Date.now();
+  players.filter(p=>p.onField).forEach(p=>{
+    if(p.lastToggle){
+      const secs=Math.round((now-p.lastToggle)/1000);
+      p.timeByQ[currentQ]=(p.timeByQ[currentQ]||0)+secs;
+      p.zoneTime[p.zone]=(p.zoneTime[p.zone]||0)+secs;
+      p.currentQStart=(p.currentQStart||0)+secs;
+      p.lastToggle=null;
+    }
+  });
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-pause').disabled=true;
+  document.getElementById('tlbl').textContent=`Quarter ${currentQ} — paused`;
+  renderGame();
+}
+
+function autoEndQuarter(){
+  pauseTimer();
+  quarterDone[currentQ-1]=true;
+  players.forEach(p=>{p.currentQStart=0;});
+  document.getElementById('tdisp').textContent='10:00';
+  document.getElementById('trem').textContent='0:00 left';
+  document.getElementById('tlbl').textContent=`Quarter ${currentQ} — DONE`;
+  document.getElementById('qend-title').textContent=`Q${currentQ} END!`;
+  document.getElementById('qend-msg').textContent=currentQ<4?'Quarter complete — rotate!':'Game over — well played!';
+  document.getElementById('qend-banner').classList.add('show');
+  renderGame();renderReport();
+}
+
+let fieldFlipped = false;
+
+function flipField(){
+  fieldFlipped = !fieldFlipped;
+  const tf = fieldFlipped ? 'translate(700,0) scale(-1,1)' : '';
+
+  // Flip the oval background
+  document.getElementById('oval-area').style.transform = fieldFlipped ? 'scaleX(-1)' : '';
+
+  // Counter-flip text layer (zone labels + counts stay readable)
+  const tl = document.getElementById('text-layer');
+  if(tl) tl.setAttribute('transform', tf);
+
+  // Counter-flip interactive layer (spots + tokens)
+  const cfl = document.getElementById('counterflip-layer');
+  if(cfl) cfl.setAttribute('transform', tf);
+
+  // Swap zone label text so BACKS↔FWDS appear on the correct side
+  const lblB = document.getElementById('zlbl-B');
+  const lblF = document.getElementById('zlbl-F');
+  if(lblB && lblF){
+    const tmp = lblB.textContent;
+    lblB.textContent = lblF.textContent;
+    lblF.textContent = tmp;
+    // Also swap their fill colours
+    const tmpFill = lblB.getAttribute('fill');
+    lblB.setAttribute('fill', lblF.getAttribute('fill'));
+    lblF.setAttribute('fill', tmpFill);
+  }
+
+  // Mobile: reverse zone card order
+  const mfield = document.getElementById('mobile-field');
+  if(mfield) mfield.style.flexDirection = fieldFlipped ? 'column-reverse' : 'column';
+
+  toast(fieldFlipped ? 'Field flipped ⇄ attacking right' : 'Field reset ⇄ attacking left');
+}
+
+function endQuarter(){
+  if(!timerRunning&&timerSecs===0)return;
+  pauseTimer();
+  quarterDone[currentQ-1]=true;
+  players.forEach(p=>{p.currentQStart=0;});
+  document.getElementById('qend-title').textContent=`Q${currentQ} END`;
+  document.getElementById('qend-msg').textContent=currentQ<4?'Quarter complete — rotate!':'Game over!';
+  document.getElementById('qend-banner').classList.add('show');
+  renderGame();renderReport();
+}
+
+function dismissQEnd(){
+  document.getElementById('qend-banner').classList.remove('show');
+  if(currentQ<4){
+    currentQ++;timerSecs=0;
+    document.getElementById('tdisp').textContent='0:00';
+    document.getElementById('trem').textContent='10:00 left';
+    document.getElementById('tlbl').textContent=`Quarter ${currentQ} — ready`;
+    document.getElementById('btn-start').disabled=false;
+    renderGame();
+  }
+}
+
+function spotClick(spotId){openModal(spotId);}
+
+function openModal(spotId){
+  const[z]=SPOTS[spotId];
+  const zName=z==='B'?'Backs':z==='M'?'Mids':'Fwds';
+  const occupant=players.find(p=>p.spot===spotId);
+  document.getElementById('modal-title').textContent=`${zName} — ${POS_SHORT[spotId]}`;
+  document.getElementById('modal-sub').textContent=occupant?`Currently: ${occupant.name} — tap to swap`:'Tap to assign';
+  const sorted=[...players].sort((a,b)=>{
+    if(a.onField!==b.onField)return a.onField?1:-1;
+    return totalLive(a)-totalLive(b);
+  });
+  document.getElementById('modal-list').innerHTML=sorted.map(p=>{
+    const[bg,fg]=ac(p);
+    const cur=p.spot===spotId;
+    // Players already on field (except current occupant) can swap in
+    const isSwapCandidate = p.onField && !cur;
+    const cls=cur?'mpbtn current':isSwapCandidate?'mpbtn':'mpbtn';
+    let status,statusColor='';
+    if(cur){status='✓ This spot';}
+    else if(isSwapCandidate){status=`⇄ Swap from ${POS_SHORT[p.spot]||p.zone}`;statusColor='color:#f0b840';}
+    else{status='Bench';}
+    return`<button class="${cls}" onclick="modalAssign(${p.id},'${spotId}')" style="${isSwapCandidate?'border-color:rgba(240,184,64,.3);background:rgba(240,184,64,.05)':''}">
+      <div class="pavi" style="background:${bg};color:${fg};width:28px;height:28px;font-size:9px">${initials(p.name)}</div>
+      <div style="flex:1"><div class="mpname">${p.name}</div><div class="mpstatus" style="${statusColor}">${status}</div></div>
+      <div class="mptime">${fmt(totalLive(p))}</div>
+    </button>`;
+  }).join('');
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  window._modalSpot=spotId;
+}
+function modalAssign(pid,spotId){
+  const target=spotId||window._modalSpot;
+  const occupant=players.find(p=>p.spot===target&&p.id!==pid);
+  const draggingP=players.find(x=>x.id===pid);
+  closeModal();
+  if(occupant && draggingP?.onField){
+    // Both on field — swap spots
+    swapPlayers(pid, occupant.id, draggingP.spot, target);
+  } else if(occupant && !draggingP?.onField){
+    // Bench → occupied spot
+    swapBenchWithField(pid, occupant.id, target);
+  } else {
+    assignToSpot(pid,target);
+  }
+}
+function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
+
+/* ══════════ DRAG (desktop) ══════════ */
+const DRAG_THRESHOLD=6;
+let dragState=null;
+
+function attachBenchDrag(el,pid,fromSpot){
+  let sx,sy,didDrag=false;
+  const start=(cx,cy)=>{sx=cx;sy=cy;didDrag=false};
+  const move=(cx,cy)=>{
+    if(!didDrag&&(Math.abs(cx-sx)>DRAG_THRESHOLD||Math.abs(cy-sy)>DRAG_THRESHOLD)){didDrag=true;startDrag(pid,cx,cy,fromSpot||null);}
+    if(didDrag)moveDrag(cx,cy);
+  };
+  const end=(cx,cy)=>{if(didDrag)endDrag(cx,cy);didDrag=false;};
+  el.addEventListener('touchstart',e=>{start(e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
+  el.addEventListener('touchmove',e=>{e.preventDefault();move(e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
+  el.addEventListener('touchend',e=>{end(e.changedTouches[0].clientX,e.changedTouches[0].clientY)});
+  el.addEventListener('mousedown',e=>{
+    start(e.clientX,e.clientY);
+    const mm=ev=>{move(ev.clientX,ev.clientY)};
+    const mu=ev=>{end(ev.clientX,ev.clientY);document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  });
+}
+
+function attachDragToToken(el,pid,fromSpot){
+  let sx,sy,didDrag=false,dblTimer=null;
+  const start=(cx,cy)=>{sx=cx;sy=cy;didDrag=false};
+  const move=(cx,cy)=>{
+    if(!didDrag&&(Math.abs(cx-sx)>DRAG_THRESHOLD||Math.abs(cy-sy)>DRAG_THRESHOLD)){didDrag=true;startDrag(pid,cx,cy,fromSpot);}
+    if(didDrag)moveDrag(cx,cy);
+  };
+  const end=(cx,cy,wasTap)=>{
+    if(didDrag){endDrag(cx,cy);}
+    else if(wasTap){
+      if(dblTimer){clearTimeout(dblTimer);dblTimer=null;sendToBench(pid);}
+      else{dblTimer=setTimeout(()=>{dblTimer=null;spotClick(fromSpot);},280);}
+    }
+    didDrag=false;
+  };
+  el.addEventListener('touchstart',e=>{start(e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
+  el.addEventListener('touchmove',e=>{if(didDrag){e.preventDefault();moveDrag(e.touches[0].clientX,e.touches[0].clientY);}},{passive:false});
+  el.addEventListener('touchend',e=>{end(e.changedTouches[0].clientX,e.changedTouches[0].clientY,true)});
+  el.addEventListener('mousedown',e=>{
+    start(e.clientX,e.clientY);
+    const mm=ev=>{move(ev.clientX,ev.clientY)};
+    const mu=ev=>{end(ev.clientX,ev.clientY,!didDrag);document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  });
+}
+
+function sendToBench(pid){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  removeFromField(p);
+  toast(`${p.name.split(' ')[0]} → Bench`);
+  renderGame();
+}
+
+let lastOvalPos = null; // tracks last cursor pos that was near the oval
+
+function startDrag(pid,cx,cy,fromSpot){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  dragState={pid,fromSpot};
+  lastOvalPos=null;
+  const g=document.getElementById('drag-ghost');
+  g.textContent=p.name.split(' ')[0].toUpperCase();
+  g.style.display='block';
+  g.style.borderColor='var(--c-accent)';
+  g.style.color='var(--c-accent)';
+  moveDrag(cx,cy);
+}
+
+function moveDrag(cx,cy){
+  const g=document.getElementById('drag-ghost');
+  g.style.left=(cx-30)+'px';g.style.top=(cy-18)+'px';
+  // Keep a running record of the last position near the oval so drops
+  // that end over the bench panel still snap to the right spot
+  const svg=document.getElementById('oval-svg');
+  if(svg){
+    const r=svg.getBoundingClientRect();
+    const pad=100;
+    if(cx>=r.left-pad && cx<=r.right+pad && cy>=r.top-pad && cy<=r.bottom+pad){
+      lastOvalPos={cx,cy};
+    }
+  }
+  highlightNearestTarget(cx,cy);
+}
+
+function endDrag(cx,cy){
+  document.getElementById('drag-ghost').style.display='none';
+  clearHighlights();
+  clearSwapHighlights();
+  if(!dragState)return;
+  const {pid, fromSpot} = dragState;
+  dragState=null;
+
+  // Try actual drop position first; if outside oval use last known oval position
+  let spotId = findNearestSpot(cx,cy,80);
+  if(!spotId && lastOvalPos){
+    spotId = findNearestSpot(lastOvalPos.cx, lastOvalPos.cy, 80);
+  }
+  lastOvalPos = null;
+  if(!spotId) return;
+
+  const targetOccupant = players.find(p=>p.spot===spotId && p.id!==pid);
+
+  if(targetOccupant && fromSpot){
+    // SWAP: both players on field — exchange spots
+    swapPlayers(pid, targetOccupant.id, fromSpot, spotId);
+  } else if(targetOccupant && !fromSpot){
+    // Bench player dragged onto occupied spot — swap bench↔field
+    swapBenchWithField(pid, targetOccupant.id, spotId);
+  } else {
+    // Empty spot — normal assign
+    assignToSpot(pid, spotId);
+  }
+}
+
+/* Swap two on-field players' spots */
+function swapPlayers(pid1, pid2, spot1, spot2){
+  const p1=players.find(x=>x.id===pid1);
+  const p2=players.find(x=>x.id===pid2);
+  if(!p1||!p2) return;
+
+  // Bank current time for both before moving
+  const now = Date.now();
+  [p1,p2].forEach(p=>{
+    if(p.lastToggle && timerRunning){
+      const secs=Math.round((now-p.lastToggle)/1000);
+      p.timeByQ[currentQ]=(p.timeByQ[currentQ]||0)+secs;
+      p.zoneTime[p.zone]=(p.zoneTime[p.zone]||0)+secs;
+      p.currentQStart=(p.currentQStart||0)+secs;
+      p.lastToggle=timerRunning?now:null;
+    }
+  });
+
+  // Exchange spots & zones
+  const [z1]=SPOTS[spot1]; const [z2]=SPOTS[spot2];
+  p1.spot=spot2; p1.zone=z2;
+  p2.spot=spot1; p2.zone=z1;
+  if(timerRunning){ p1.lastToggle=now; p2.lastToggle=now; }
+
+  toast(`${p1.name.split(' ')[0]} ⇄ ${p2.name.split(' ')[0]}`);
+  renderGame();
+}
+
+/* Swap a bench player with an on-field player */
+function swapBenchWithField(benchPid, fieldPid, spotId){
+  const bp=players.find(x=>x.id===benchPid);
+  const fp=players.find(x=>x.id===fieldPid);
+  if(!bp||!fp) return;
+  removeFromField(fp);
+  assignToSpot(bp.id, spotId);
+  toast(`${bp.name.split(' ')[0]} ↔ ${fp.name.split(' ')[0]}`);
+}
+
+function svgCoords(cx,cy){
+  const svg=document.getElementById('oval-svg');
+  const rect=svg.getBoundingClientRect();
+  const vb=svg.viewBox.baseVal;
+  return[vb.x+(cx-rect.left)/rect.width*vb.width, vb.y+(cy-rect.top)/rect.height*vb.height];
+}
+function findNearestSpot(cx,cy,maxDist){
+  const[sx,sy]=svgCoords(cx,cy);
+  let best=null,bestD=Infinity;
+  Object.entries(SPOTS).forEach(([sid,[z,px,py]])=>{
+    const d=Math.hypot(sx-px,sy-py);
+    if(d<bestD){bestD=d;best=sid;}
+  });
+  const svg=document.getElementById('oval-svg');
+  const scale=svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
+  return bestD*scale<maxDist*1.5?best:null;
+}
+
+/* Highlight nearest target — gold if swap, white if empty */
+function highlightNearestTarget(cx,cy){
+  clearHighlights();
+  clearSwapHighlights();
+  // Use lastOvalPos as fallback so highlights show when cursor drifts off-oval
+  let spotId=findNearestSpot(cx,cy,60);
+  if(!spotId && lastOvalPos) spotId=findNearestSpot(lastOvalPos.cx,lastOvalPos.cy,60);
+  if(!spotId)return;
+  const [,px,py]=SPOTS[spotId];
+  const occupant=players.find(p=>p.spot===spotId);
+  const isSwap = occupant && dragState && occupant.id!==dragState.pid;
+
+  // Highlight the spot circle
+  document.getElementById('spots-layer').querySelectorAll('circle').forEach(c=>{
+    if(Math.abs(parseFloat(c.getAttribute('cx'))-px)<2&&Math.abs(parseFloat(c.getAttribute('cy'))-py)<2){
+      c.setAttribute('stroke', isSwap ? '#f0b840' : '#ffffff');
+      c.setAttribute('stroke-width','2.5');
+    }
+  });
+
+  // Also highlight the occupant token with a gold glow
+  if(isSwap){
+    const tokEl=document.getElementById('tok-'+occupant.id);
+    if(tokEl) tokEl.classList.add('tok-swap-target');
+    // Update ghost label to show swap
+    const draggingP=players.find(x=>x.id===dragState.pid);
+    const g=document.getElementById('drag-ghost');
+    if(draggingP&&g){
+      g.textContent=`${draggingP.name.split(' ')[0]} ⇄ ${occupant.name.split(' ')[0]}`;
+      g.style.borderColor='#f0b840';
+      g.style.color='#f0b840';
+    }
+  } else {
+    const draggingP=players.find(x=>x.id===dragState?.pid);
+    const g=document.getElementById('drag-ghost');
+    if(draggingP&&g){
+      g.textContent=draggingP.name.split(' ')[0].toUpperCase();
+      g.style.borderColor='var(--c-accent)';
+      g.style.color='var(--c-accent)';
+    }
+  }
+}
+
+function clearHighlights(){
+  document.getElementById('spots-layer').querySelectorAll('circle').forEach(c=>{
+    c.setAttribute('stroke','rgba(255,255,255,0.4)');c.setAttribute('stroke-width','1.5');
+  });
+}
+function clearSwapHighlights(){
+  document.querySelectorAll('.tok-swap-target').forEach(el=>el.classList.remove('tok-swap-target'));
+  document.querySelectorAll('.tok-swap-target-mobile').forEach(el=>el.classList.remove('tok-swap-target-mobile'));
+}
+
+/* ══════════ INTERCHANGE ENGINE ══════════ */
+let icPanelOpen = false;
+let pendingInterchanges = []; // [{benchPlayerId, fieldPlayerId, spotId}]
+
+/*
+  For each bench player (sorted by least total game time first),
+  find the best on-field player to swap them with.
+
+  Matching logic:
+  1. Bench player inherits the zone of the player they replace
+  2. On-field candidate = player with the MOST total game time in any zone
+     (they've had the most time, they deserve a rest)
+  3. Each on-field player can only be targeted once
+*/
+function buildInterchanges(){
+  const bench = [...players]
+    .filter(p => !p.onField)
+    .sort((a,b) => totalLive(a) - totalLive(b)); // least time first
+
+  const onField = [...players]
+    .filter(p => p.onField && p.spot)
+    .sort((a,b) => totalLive(b) - totalLive(a)); // most time first — they need a rest
+
+  const used = new Set(); // on-field players already targeted
+  const swaps = [];
+
+  bench.forEach(benchP => {
+    // Find the on-field player with most time not yet targeted
+    const target = onField.find(fp => !used.has(fp.id));
+    if(!target) return;
+    used.add(target.id);
+    swaps.push({
+      benchId: benchP.id,
+      fieldId: target.id,
+      spotId:  target.spot,
+      zone:    target.zone,
+    });
+  });
+
+  return swaps;
+}
+
+function renderInterchangePanel(){
+  const swaps = buildInterchanges();
+  pendingInterchanges = swaps;
+
+  const bench = players.filter(p=>!p.onField);
+  const hasTimer = timerRunning || timerSecs > 0;
+
+  if(!hasTimer || bench.length === 0){
+    const msg = bench.length === 0
+      ? 'No players on the bench.'
+      : 'Start the quarter first to see interchange suggestions.';
+    const html = `<div style="padding:12px 10px;font-size:11px;color:var(--c-muted);text-align:center">${msg}</div>`;
+    const icl  = document.getElementById('ic-list');
+    const mbil = document.getElementById('mb-ic-list');
+    if(icl)  icl.innerHTML  = html;
+    if(mbil) mbil.innerHTML = html;
+    const iaa  = document.getElementById('ic-apply-all');
+    const mbia = document.getElementById('mb-ic-apply-all');
+    if(iaa)  iaa.style.display = 'none';
+    if(mbia) mbia.style.display = 'none';
+    return;
+  }
+
+  let html = '';
+  swaps.forEach((sw,i) => {
+    const bp = players.find(x=>x.id===sw.benchId);
+    const fp = players.find(x=>x.id===sw.fieldId);
+    if(!bp||!fp) return;
+    const [bbg,bfg] = ac(bp);
+    const [fbg,ffg] = ac(fp);
+    const zc = sw.zone;
+    html += `<div class="ic-swap">
+      <!-- bench player coming ON -->
+      <div class="ic-player">
+        <div class="ic-avi" style="background:${bbg};color:${bfg}">${initials(bp.name)}</div>
+        <div class="ic-name">${bp.name.split(' ')[0]}</div>
+        <div class="ic-meta">${fmt(totalLive(bp))} total</div>
+        <div class="ic-zone-tag ${zc}">→ ${zc==='B'?'BACKS':zc==='M'?'MIDS':'FWDS'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;padding:0 2px">
+        <div class="ic-arrow">⇄</div>
+        <div style="font-size:8px;color:var(--c-muted)">${POS_SHORT[sw.spotId]}</div>
+        <button class="ic-apply-btn" onclick="applySingleInterchange(${i})">Go</button>
+      </div>
+      <!-- field player going OFF -->
+      <div class="ic-player">
+        <div class="ic-avi" style="background:${fbg};color:${ffg}">${initials(fp.name)}</div>
+        <div class="ic-name">${fp.name.split(' ')[0]}</div>
+        <div class="ic-meta">${fmt(totalLive(fp))} total</div>
+        <div class="ic-zone-tag ${zc}" style="opacity:.5">OFF</div>
+      </div>
+    </div>`;
+  });
+
+  const icl  = document.getElementById('ic-list');
+  const mbil = document.getElementById('mb-ic-list');
+  if(icl)  icl.innerHTML  = html + (swaps.length ? '<div class="ic-drag-hint">↕ drag a row to swap onto the field</div>' : '');
+  if(mbil) mbil.innerHTML = html + (swaps.length ? '<div class="ic-drag-hint">↕ drag a row to swap onto the field</div>' : '');
+
+  const iaa  = document.getElementById('ic-apply-all');
+  const mbia = document.getElementById('mb-ic-apply-all');
+  if(iaa)  iaa.style.display  = swaps.length ? '' : 'none';
+  if(mbia) mbia.style.display = swaps.length ? '' : 'none';
+
+  // Attach drag-to-swap handlers to every ic-swap row
+  swaps.forEach((_,i) => {
+    ['ic-list','mb-ic-list'].forEach(listId => {
+      const list = document.getElementById(listId);
+      if(!list) return;
+      const rows = list.querySelectorAll('.ic-swap');
+      const row  = rows[i];
+      if(row) attachIcDrag(row, i);
+    });
+  });
+}
+
+/* ── IC drag-to-swap ── */
+let icDragState = null; // {swapIdx, ghost}
+
+function attachIcDrag(row, swapIdx){
+  const THRESHOLD = 6;
+  let sx,sy,didDrag=false;
+
+  const startDragIc = (cx,cy) => {
+    const sw = pendingInterchanges[swapIdx];
+    if(!sw) return;
+    const bp = players.find(x=>x.id===sw.benchId);
+    const fp = players.find(x=>x.id===sw.fieldId);
+    if(!bp||!fp) return;
+
+    icDragState = { swapIdx };
+    row.classList.add('dragging');
+
+    // Create ghost
+    const g = document.getElementById('drag-ghost');
+    g.textContent = `${bp.name.split(' ')[0]} ⇄ ${fp.name.split(' ')[0]}`;
+    g.style.display = 'block';
+    g.style.borderColor = '#10b981';
+    g.style.color = '#10b981';
+    moveIcGhost(cx,cy);
+  };
+
+  const moveIcGhost = (cx,cy) => {
+    const g = document.getElementById('drag-ghost');
+    g.style.left = (cx-50)+'px';
+    g.style.top  = (cy-14)+'px';
+    // Highlight drop target on oval
+    highlightIcDropZone(cx,cy);
+  };
+
+  const endDragIc = (cx,cy) => {
+    document.getElementById('drag-ghost').style.display='none';
+    document.getElementById('drag-ghost').style.borderColor='';
+    document.getElementById('drag-ghost').style.color='';
+    clearHighlights();
+    clearMobileIcHighlight();
+    row.classList.remove('dragging');
+
+    if(icDragState){
+      // Check if dropped on valid target
+      if(isOverOval(cx,cy) || isOverMobileField(cx,cy)){
+        applySingleInterchange(icDragState.swapIdx);
+      }
+    }
+    icDragState = null;
+  };
+
+  // Touch
+  row.addEventListener('touchstart', e=>{
+    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; didDrag=false;
+  },{passive:true});
+  row.addEventListener('touchmove', e=>{
+    const t=e.touches[0];
+    if(!didDrag && (Math.abs(t.clientX-sx)>THRESHOLD||Math.abs(t.clientY-sy)>THRESHOLD)){
+      didDrag=true; startDragIc(t.clientX,t.clientY);
+    }
+    if(didDrag){ e.preventDefault(); moveIcGhost(t.clientX,t.clientY); }
+  },{passive:false});
+  row.addEventListener('touchend', e=>{
+    if(didDrag) endDragIc(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    didDrag=false;
+  });
+
+  // Mouse
+  row.addEventListener('mousedown', e=>{
+    // Don't interfere with the Go button
+    if(e.target.closest('.ic-apply-btn')) return;
+    sx=e.clientX; sy=e.clientY; didDrag=false;
+    const mm = ev=>{
+      if(!didDrag && (Math.abs(ev.clientX-sx)>THRESHOLD||Math.abs(ev.clientY-sy)>THRESHOLD)){
+        didDrag=true; startDragIc(ev.clientX,ev.clientY);
+      }
+      if(didDrag) moveIcGhost(ev.clientX,ev.clientY);
+    };
+    const mu = ev=>{
+      if(didDrag) endDragIc(ev.clientX,ev.clientY);
+      didDrag=false;
+      document.removeEventListener('mousemove',mm);
+      document.removeEventListener('mouseup',mu);
+    };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+function isOverOval(cx,cy){
+  const area = document.getElementById('oval-area');
+  if(!area || area.style.display==='none') return false;
+  const r = area.getBoundingClientRect();
+  return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
+}
+
+function isOverMobileField(cx,cy){
+  const mf = document.getElementById('mobile-field');
+  if(!mf || mf.style.display==='none') return false;
+  const r = mf.getBoundingClientRect();
+  return cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom;
+}
+
+function highlightIcDropZone(cx,cy){
+  clearHighlights();
+  // Desktop: highlight the target spot on the oval
+  if(isOverOval(cx,cy) && icDragState){
+    const sw = pendingInterchanges[icDragState.swapIdx];
+    if(sw){
+      const[,px,py] = SPOTS[sw.spotId];
+      const circles = document.getElementById('spots-layer').querySelectorAll('circle');
+      circles.forEach(c=>{
+        if(Math.abs(parseFloat(c.getAttribute('cx'))-px)<2 && Math.abs(parseFloat(c.getAttribute('cy'))-py)<2){
+          c.setAttribute('stroke','#10b981');
+          c.setAttribute('stroke-width','3');
+        }
+      });
+    }
+  }
+  // Mobile: highlight the target zone
+  if(isOverMobileField(cx,cy) && icDragState){
+    const sw = pendingInterchanges[icDragState.swapIdx];
+    if(sw){
+      const zoneEl = document.querySelector(`.mzone.${sw.zone==='B'?'back':sw.zone==='M'?'mid':'fwd'}`);
+      if(zoneEl) zoneEl.style.outline = '2px solid #10b981';
+    }
+  }
+}
+
+function clearMobileIcHighlight(){
+  document.querySelectorAll('.mzone').forEach(el=>el.style.outline='');
+}
+
+function toggleInterchangePanel(){
+  icPanelOpen = !icPanelOpen;
+
+  // Desktop
+  const panel = document.getElementById('ic-panel');
+  const btn   = document.getElementById('ic-btn');
+  if(panel) panel.classList.toggle('open', icPanelOpen);
+  if(btn)   btn.classList.toggle('active', icPanelOpen);
+
+  // Mobile
+  const mbPanel = document.getElementById('mb-ic-panel');
+  const mbBtn   = document.getElementById('mb-ic-btn');
+  if(mbPanel) mbPanel.classList.toggle('open', icPanelOpen);
+  if(mbBtn)   mbBtn.classList.toggle('active', icPanelOpen);
+
+  if(icPanelOpen) renderInterchangePanel();
+}
+
+function applySingleInterchange(idx){
+  const sw = pendingInterchanges[idx];
+  if(!sw) return;
+  const bp = players.find(x=>x.id===sw.benchId);
+  const fp = players.find(x=>x.id===sw.fieldId);
+  if(!bp||!fp) return;
+
+  // Bank field player's time then move to bench
+  removeFromField(fp);
+  // Put bench player in the vacated spot (assignToSpot handles lastToggle)
+  assignToSpot(bp.id, sw.spotId);
+
+  // Remove this swap from pending and re-render
+  pendingInterchanges.splice(idx, 1);
+  renderInterchangePanel();
+  toast(`${bp.name.split(' ')[0]} ↔ ${fp.name.split(' ')[0]}`);
+}
+
+function applyAllInterchanges(){
+  // Apply in order — each applySingleInterchange re-renders, so iterate on a copy
+  const copy = [...pendingInterchanges];
+  copy.forEach(sw => {
+    const bp = players.find(x=>x.id===sw.benchId);
+    const fp = players.find(x=>x.id===sw.fieldId);
+    if(!bp||!fp||bp.onField) return; // skip if already applied
+    removeFromField(fp);
+    assignToSpot(bp.id, sw.spotId);
+  });
+  pendingInterchanges = [];
+  renderInterchangePanel();
+  toast('All interchanges applied!');
+}
+
+/* ══════════ LINEUP ENGINE ══════════ */
+function setLuMode(m,btn){
+  luMode=m;
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+}
+
+/*
+  Zone-aware priority score for a player assigned to a specific zone.
+  Lower score = higher priority (gets picked first for that zone).
+
+  Logic (in order of weight):
+  1. Bench players MUST come first — massive bonus for being off-ground
+  2. Players who have NEVER played this zone get highest zone priority
+  3. Players with LEAST time in this specific zone come next
+  4. Total game time as a tiebreaker (least total time preferred)
+*/
+function zonePriority(p, z){
+  const zoneTime = p.zoneTime[z] || 0;
+  const totalTime = totalBanked(p);
+  const neverInZone = zoneTime === 0 ? 1 : 0;
+  const offBench = !p.onField ? 1 : 0;
+
+  // Weights: bench first (100k), then never-in-zone (10k), then zone time, then total
+  return (offBench  ? 0 : 100000)
+       + (neverInZone ? 0 : 10000)
+       + zoneTime * 10
+       + totalTime;
+}
+
+/*
+  Build a full 12-player suggestion, zone by zone.
+  Each zone picks its 4 best players independently, then we resolve
+  any cross-zone conflicts (a player can only appear in one zone).
+  Conflict resolution: re-pick the zone where the player had lower priority.
+*/
+function generateLineupData(){
+  if(!players.length) return null;
+
+  const suggestion = {}; // spotId -> playerId
+  const used = new Set();
+
+  // For each zone, rank ALL players by how much they need that zone
+  ['B','M','F'].forEach(z => {
+    const zSpots = Object.entries(SPOTS).filter(([,[zz]])=>zz===z).map(([sid])=>sid);
+    // Sort all unassigned players by zone priority
+    const ranked = [...players]
+      .filter(p => !used.has(p.id))
+      .sort((a,b) => zonePriority(a,z) - zonePriority(b,z));
+    zSpots.slice(0,4).forEach((sid, i) => {
+      if(ranked[i]){ suggestion[sid] = ranked[i].id; used.add(ranked[i].id); }
+    });
+  });
+
+  return suggestion;
+}
+
+/* Badge logic for display */
+function slotBadge(p, z, avg){
+  const zoneTime = p.zoneTime[z] || 0;
+  const totalTime = totalBanked(p);
+  if(!p.onField && zoneTime === 0) return {cls:'new',  label:'NEW+BENCH'};
+  if(zoneTime === 0)               return {cls:'new',  label:'NEW ZONE'};
+  if(!p.onField)                   return {cls:'bench',label:'BENCH'};
+  if(totalTime < avg * 0.75)       return {cls:'low',  label:'LOW TIME'};
+  return {cls:'ok', label:'ON'};
+}
+
+function generateLineup(){
+  document.getElementById('lu-qnum').textContent = currentQ;
+  const sug = generateLineupData();
+  lastSuggestion = sug;
+  if(!sug || !Object.keys(sug).length){
+    document.getElementById('lu-content').innerHTML=`<div class="lu-empty">Add players in the Roster tab first.</div>`;
+    return;
+  }
+
+  const avg = players.length ? Math.round(players.reduce((a,p)=>a+totalBanked(p),0)/players.length) : 0;
+  const zoneNames = {B:'Backs', M:'Mids', F:'Fwds'};
+  const zoneCols  = {B:'rgba(224,112,80,.12)', M:'rgba(80,212,144,.08)', F:'rgba(144,128,248,.12)'};
+  let html = '';
+
+  ['B','M','F'].forEach(z => {
+    // Zone header with rotation insight
+    const zPlayers = Object.entries(sug)
+      .filter(([sid])=>SPOTS[sid][0]===z)
+      .map(([,pid])=>players.find(x=>x.id===pid))
+      .filter(Boolean);
+    const newToZone = zPlayers.filter(p=>(p.zoneTime[z]||0)===0).length;
+    const fromBench = zPlayers.filter(p=>!p.onField).length;
+    const insightParts = [];
+    if(fromBench > 0) insightParts.push(`${fromBench} off bench`);
+    if(newToZone > 0) insightParts.push(`${newToZone} new to zone`);
+    const insight = insightParts.length ? `<span style="font-size:9px;color:var(--c-muted);margin-left:auto">${insightParts.join(' · ')}</span>` : '';
+
+    html += `<div class="zone-block" style="border-top:2px solid ${z==='B'?'#e07050':z==='M'?'#3db87a':'#a090f0'}">
+      <div class="zone-block-hdr"><span class="zone-tag ${z}">${zoneNames[z]}</span>${insight}</div>
+      <div class="zone-slots">`;
+
+    Object.entries(SPOTS).filter(([,[zz]])=>zz===z).forEach(([sid,[,,,lbl]])=>{
+      const pid = sug[sid];
+      const p = players.find(x=>x.id===pid);
+      if(!p){html+=`<div class="lu-slot"><span style="font-size:11px;color:var(--c-muted)">${lbl} — empty</span></div>`;return;}
+      const[bg,fg] = ac(p);
+      const total = totalBanked(p);
+      const ztime = p.zoneTime[z]||0;
+      const b = slotBadge(p, z, avg);
+      const badgeColors = {
+        new:   'background:rgba(16,185,129,.2);color:#10b981',
+        bench: 'background:rgba(74,144,226,.2);color:#6ab0f0',
+        low:   'background:rgba(240,184,64,.2);color:#f0b840',
+        ok:    'background:rgba(255,255,255,.08);color:var(--c-muted)',
+      };
+      const flagged = b.cls !== 'ok' ? ' flagged' : '';
+      html += `<div class="lu-slot${flagged}">
+        <div style="width:20px;height:20px;border-radius:50%;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0">${initials(p.name)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name.split(' ')[0]}</div>
+          <div style="font-size:8px;color:var(--c-muted)">Zone: ${fmt(ztime)} · Total: ${fmt(total)}</div>
+        </div>
+        <span class="lu-badge" style="${badgeColors[b.cls]}">${b.label}</span>
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+
+  // Summary line
+  const benchCnt  = players.filter(p=>!p.onField).length;
+  const newZoneCnt = Object.entries(sug).filter(([sid,pid])=>{
+    const p=players.find(x=>x.id===pid); const z=SPOTS[sid][0];
+    return p && (p.zoneTime[z]||0)===0;
+  }).length;
+  document.getElementById('lu-stat-line').textContent =
+    `Q${currentQ} · ${benchCnt} off bench included · ${newZoneCnt} new-zone debuts · avg ${fmt(avg)}`;
+
+  html += `<button class="lu-apply" onclick="applyLineup()">✓ Apply this lineup</button>`;
+  document.getElementById('lu-content').innerHTML = html;
+}
+
+function applyLineup(){
+  if(!lastSuggestion)return;
+  if(timerRunning)pauseTimer();
+  players.forEach(p=>{if(p.onField)removeFromField(p);});
+  Object.entries(lastSuggestion).forEach(([sid,pid])=>{
+    const p=players.find(x=>x.id===pid);if(!p)return;
+    const[z]=SPOTS[sid];
+    p.onField=true;p.spot=sid;p.zone=z;p.lastToggle=null;p.currentQStart=0;
+  });
+  closeLineupDrawer();
+  closeModal();
+  toast('Lineup applied! Hit ▶ Start when ready.');
+  const gameBtn=document.querySelector('.nav-btn:nth-child(2)');
+  showTab('game', gameBtn);
+  renderGame();
+}
+
+function openLineupDrawer(){
+  const sug=generateLineupData();
+  lastSuggestion=sug;if(!sug)return;
+  const avg=players.length?Math.round(players.reduce((a,p)=>a+totalBanked(p),0)/players.length):0;
+  const zoneNames={B:'Backs',M:'Mids',F:'Fwds'};
+  let html='';
+  ['B','M','F'].forEach(z=>{
+    html+=`<div class="lu-draw-zone"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--c-muted);margin-bottom:4px;text-transform:uppercase">${zoneNames[z]}</div>`;
+    Object.entries(SPOTS).filter(([,[zz]])=>zz===z).forEach(([sid,[,,,lbl]])=>{
+      const pid=sug[sid];const p=players.find(x=>x.id===pid);
+      if(!p){html+=`<div class="lu-draw-row"><div class="lu-draw-pos">${lbl}</div><div class="lu-draw-name" style="color:var(--c-muted)">—</div></div>`;return;}
+      const[bg,fg]=ac(p);
+      const b=slotBadge(p,z,avg);
+      const badgeColors={new:'background:rgba(16,185,129,.2);color:#10b981',bench:'background:rgba(74,144,226,.2);color:#6ab0f0',low:'background:rgba(240,184,64,.2);color:#f0b840',ok:''};
+      const badge=b.cls!=='ok'?`<span class="lu-draw-badge" style="${badgeColors[b.cls]}">${b.label}</span>`:'';
+      html+=`<div class="lu-draw-row">
+        <div class="lu-draw-pos">${lbl}</div>
+        <div class="lu-draw-avi" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+        <div class="lu-draw-name">${p.name.split(' ')[0]}</div>
+        ${badge}
+        <div class="lu-draw-time">${fmt(p.zoneTime[z]||0)}</div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  html+=`<button class="lu-apply-draw" onclick="applyLineup()">✓ Apply to oval</button>`;
+
+  if(!isMobile()){
+    // Desktop: open the side drawer
+    const drawer=document.getElementById('lineup-drawer');
+    document.getElementById('lu-drawer-body').innerHTML=html;
+    drawer.classList.add('open');
+  } else {
+    // Mobile: show as bottom sheet modal
+    document.getElementById('modal-title').textContent='⚡ Suggested Lineup';
+    document.getElementById('modal-sub').textContent='Tap Apply to set the lineup';
+    document.getElementById('modal-list').innerHTML=html;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    window._modalSpot=null;
+  }
+}
+function closeLineupDrawer(){
+  const d=document.getElementById('lineup-drawer');
+  if(d)d.classList.remove('open');
+}
+
+/* ══════════ REPORT ══════════ */
+function elapsedGameSecs(){
+  // Total possible seconds based on quarters completed + current quarter elapsed
+  const doneSecs = quarterDone.filter(Boolean).length * Q_SECS;
+  return doneSecs + timerSecs;
+}
+
+function togPct(p){
+  const elapsed = elapsedGameSecs();
+  if(!elapsed) return 0;
+  return Math.round(totalLive(p) / elapsed * 100);
+}
+
+function togPctClass(pct){
+  return pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low';
+}
+
+function renderReport(){
+  if(!players.length) return;
+
+  const sorted = [...players].sort((a,b) => totalLive(b) - totalLive(a));
+  const maxTotal = Math.max(...players.map(totalLive), 1);
+
+  // Summary pills — IDs so tickReport can update them
+  const totalPlayed = players.filter(p=>totalLive(p)>0).length;
+  const avgTime = Math.round(players.reduce((a,p)=>a+totalLive(p),0) / (players.length||1));
+  const spread = totalLive(sorted[0]) - totalLive(sorted[sorted.length-1]);
+  const avgPct = togPct({timeByQ:{1:avgTime,2:0,3:0,4:0}, zoneTime:{}, onField:false, lastToggle:null});
+  const elapsed = elapsedGameSecs();
+  const avgTogPct = elapsed ? Math.round(avgTime / elapsed * 100) : 0;
+  document.getElementById('rep-summary').innerHTML = `
+    <div class="rep-summary-pill"><b>${players.length}</b>Players</div>
+    <div class="rep-summary-pill"><b id="rep-avg">${fmt(avgTime)}</b>Avg TOG</div>
+    <div class="rep-summary-pill"><b id="rep-avg-pct">${avgTogPct}%</b>Avg TOG%</div>
+    <div class="rep-summary-pill"><b id="rep-spread">${fmt(spread)}</b>Spread</div>
+  `;
+
+  // Table rows — every cell that changes gets an ID
+  const rows = sorted.map((p, i) => {
+    const [bg, fg] = ac(p);
+    const total = totalLive(p);
+    const pct = Math.round(total / maxTotal * 100);
+    const rank = i + 1;
+    const rankColor = rank===1?'#f0b840': rank===2?'#b0bec5': rank===3?'#cd8c52':'var(--c-muted)';
+    const tpct = togPct(p);
+    const tpctCls = togPctClass(tpct);
+
+    const qCells = [1,2,3,4].map(q => {
+      const banked = p.timeByQ[q]||0;
+      const live = q===currentQ&&p.onField&&p.lastToggle&&timerRunning ? Math.round((Date.now()-p.lastToggle)/1000) : 0;
+      const t = banked + live;
+      return `<td id="rep-q${q}-${p.id}" class="rep-q${t===0?' zero':''}">${t>0?fmt(t):'—'}</td>`;
+    }).join('');
+
+    const zoneCells = ['B','M','F'].map(z => {
+      const banked = p.zoneTime[z]||0;
+      const live = p.onField&&p.zone===z&&p.lastToggle&&timerRunning ? Math.round((Date.now()-p.lastToggle)/1000) : 0;
+      const t = banked + live;
+      return `<td id="rep-zone-${z}-${p.id}" class="rep-zone ${z}${t===0?' zero':''}">${t>0?fmt(t):'—'}</td>`;
+    }).join('');
+
+    return `<tr id="rep-row-${p.id}">
+      <td class="rep-rank" id="rep-rank-${p.id}" style="color:${rankColor}">${rank}</td>
+      <td class="td-name">
+        <span class="rep-avi" style="background:${bg};color:${fg}">${initials(p.name)}</span>
+        <span class="rep-pname">${p.name}</span>
+      </td>
+      <td class="rep-total" id="rep-total-${p.id}">${fmt(total)}</td>
+      <td class="rep-tog-pct ${tpctCls}" id="rep-pct-${p.id}">${tpct}%</td>
+      ${qCells}
+      ${zoneCells}
+      <td class="rep-bar-cell"><div class="rep-bar"><div class="rep-fill" id="rep-bar-${p.id}" style="width:${pct}%"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('rep-tbody').innerHTML = rows;
+}
+
+/* ══════════ TAB NAV ══════════ */
+function showTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(name==='game'){applyLayout();renderGame();}
+  if(name==='report')renderReport();
+}
+
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+/* ══════════ INIT ══════════ */
+const DEMO=['Samuel','Kai','Myles','Wilson','Zephyr','Iziah','Arlo','Marcus','Hudson','Luca','Ryan','Reuben','Seamus','Patrick','Saxon'];
+DEMO.forEach(n=>players.push({id:nextId++,name:n,onField:false,spot:null,zone:null,
+  timeByQ:{1:0,2:0,3:0,4:0},zoneTime:{B:0,M:0,F:0},lastToggle:null,currentQStart:0}));
+applyLayout();
+renderRoster();
+renderGame();
+</script>
+</body>
+</html>

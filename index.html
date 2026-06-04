@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+<!-- PWA / Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AFL Tracker">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="AFL Tracker">
+<meta name="theme-color" content="#1b4422">
+<meta name="description" content="Game time and position tracker for AFL Under 9 & 10 development">
+
+<!-- Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple touch icons (inline SVG converted — no external file needed for Add to Home Screen) -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<title>AFL U9 &amp; 10 Tracker</title>
+<style>
+  /* System font fallbacks — works fully offline on iPad */
+  @font-face {
+    font-family: 'Barlow Condensed';
+    src: local('AvenirNextCondensed-Heavy'), local('Avenir Next Condensed Heavy'),
+         local('AvenirNextCondensed-Bold'), local('Avenir Next Condensed Bold'),
+         local('HelveticaNeue-CondensedBold'), local('Arial Narrow Bold');
+    font-weight: 700 800;
+  }
+  @font-face {
+    font-family: 'Barlow Condensed';
+    src: local('AvenirNextCondensed-Medium'), local('Avenir Next Condensed Medium'),
+         local('HelveticaNeue-Condensed'), local('Arial Narrow');
+    font-weight: 400 600;
+  }
+  @font-face {
+    font-family: 'Barlow';
+    src: local('AvenirNext-Regular'), local('Avenir Next Regular'),
+         local('Avenir-Roman'), local('HelveticaNeue'), local('Arial');
+    font-weight: 400 600;
+  }
+</style>
+<style>
+:root{
+  --grass:#1b4422;--gold:#f0b429;--white:#f0ebe0;
+  --muted:#7a9a80;--panel:rgba(0,0,0,0.45);--border:rgba(255,255,255,0.1);
+  --danger:#e05252;--warn:#e8a030;--good:#4caf72;
+  --r:10px;--rs:7px;
+  --zB:#e07050;--zM:#50d490;--zF:#9080f8;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --hdr-h: calc(54px + var(--safe-top));
+  --ctrl-h:48px;
+  --bench-h:88px;
+  --bench-w:108px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Barlow',sans-serif;color:var(--white)}
+
+/* ══ HEADER ══ */
+.hdr{
+  position:fixed;top:0;left:0;right:0;height:var(--hdr-h);z-index:50;
+  background:rgba(0,0,0,0.92);border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-end;
+  padding:0 max(12px, var(--safe-right)) 8px max(12px, var(--safe-left));
+  gap:8px;
+}
+.hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--gold);white-space:nowrap}
+.hdr-sub{font-size:9px;color:var(--muted);white-space:nowrap}
+.hdr-spacer{flex:1}
+.tbar{display:flex;gap:3px}
+.tbtn{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;padding:8px 20px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:rgba(0,0,0,0);min-height:42px}
+.tbtn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+
+/* ══ TABS ══ */
+.tab{
+  display:block;
+  position:fixed;top:var(--hdr-h);left:0;right:0;bottom:0;
+  overflow:hidden;
+  visibility:hidden;       /* hidden but keeps layout — no stacking bugs */
+  pointer-events:none;
+  z-index:1;
+}
+.tab.active{
+  visibility:visible;
+  pointer-events:auto;
+  z-index:2;
+}
+
+/* ══════════════════════════════
+   GAME TAB — full-screen oval
+   Layout:
+     LANDSCAPE: ctrl strip top, oval fills rest, bench strip RIGHT
+     PORTRAIT:  ctrl strip top, oval fills rest, bench strip BOTTOM
+══════════════════════════════ */
+#tab-game{background:var(--grass)}
+
+/* Grass stripes */
+#tab-game::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,0,0,0.055) 40px,rgba(0,0,0,0.055) 80px);
+}
+
+/* Control strip — sits just below header */
+.ctrl-strip{
+  position:absolute;top:0;left:0;right:0;height:var(--ctrl-h);z-index:10;
+  background:rgba(0,0,0,0.75);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 10px;gap:8px;
+}
+.qbar{display:flex;gap:4px}
+.qbtn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.qbtn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.qbtn.done{background:rgba(76,175,114,.25);color:var(--good);border-color:rgba(76,175,114,.4)}
+.ctrl-div{width:1px;background:var(--border);height:26px;flex-shrink:0}
+.timer-big{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--gold);line-height:1;min-width:72px}
+.timer-rem{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:var(--white);opacity:.7}
+.timer-lbl{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.ctrl-btns{display:flex;gap:4px;margin-left:auto}
+.cb{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--white);cursor:pointer;white-space:nowrap;transition:all .15s}
+.cb:active{transform:scale(.96)}
+.cb.start{background:rgba(76,175,114,.25);border-color:rgba(76,175,114,.5);color:var(--good)}
+.cb.pause{background:rgba(240,180,41,.2);border-color:rgba(240,180,41,.4);color:var(--gold)}
+.cb.endq{background:rgba(144,128,248,.2);border-color:rgba(144,128,248,.4);color:#b0a8f8}
+
+/* Stats pills in ctrl strip */
+.stat-pill{display:flex;flex-direction:column;align-items:center;padding:2px 8px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.06);flex-shrink:0}
+.sp-val{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;line-height:1}
+.sp-lbl{font-size:8px;color:var(--muted);margin-top:1px}
+.sp-good .sp-val{color:var(--good)}
+.sp-warn .sp-val{color:var(--warn)}
+.sp-danger .sp-val{color:var(--danger)}
+
+/* ── OVAL AREA ──
+   Landscape: fills from ctrl strip to bottom, leaves bench-w on right
+   Portrait:  fills from ctrl strip, leaves bench-h at bottom
+*/
+.oval-area{
+  position:absolute;
+  top:var(--ctrl-h);
+  left:0;
+  right:var(--bench-w);   /* landscape */
+  bottom:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;z-index:1;
+}
+#oval-svg{width:100%;height:100%;touch-action:none}
+
+/* ── BENCH STRIP ──
+   Landscape: right side, full height (minus ctrl)
+   Portrait:  bottom, full width
+*/
+.bench-strip{
+  position:absolute;
+  top:var(--ctrl-h);
+  right:0;
+  width:var(--bench-w);
+  bottom:0;
+  background:rgba(0,0,0,.7);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;z-index:10;
+}
+.bench-hdr{
+  padding:5px 4px 3px;
+  font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:1px;color:var(--muted);text-transform:uppercase;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.bench-scroll{flex:1;overflow-y:auto;padding:4px}
+.bench-scroll::-webkit-scrollbar{width:2px}
+.bench-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:1px}
+
+/* Bench player chip — draggable rectangular card */
+.bench-chip{
+  display:flex;flex-direction:column;align-items:stretch;gap:0;
+  border-radius:5px;margin-bottom:4px;
+  border:1px solid var(--border);background:rgba(255,255,255,.06);
+  cursor:grab;touch-action:none;
+  transition:background .12s,transform .1s,box-shadow .1s;
+  position:relative;overflow:hidden;
+}
+.bench-chip:active{cursor:grabbing;transform:scale(.97)}
+.bench-chip.dragging{opacity:.3}
+.bench-chip.needs{border-left:3px solid var(--danger)}
+.bench-chip.excess{border-left:3px solid var(--warn)}
+/* Already placed on the oval — greyed out, no interaction */
+.bench-chip.placed{
+  opacity:0.28;
+  cursor:not-allowed;
+  pointer-events:none;
+  border-color:rgba(255,255,255,.04);
+  background:rgba(255,255,255,.02);
+  filter:grayscale(0.8) brightness(0.7);
+}
+/* colour bar at top of each chip */
+.bc-bar{height:4px;width:100%;flex-shrink:0}
+.bc-body{display:flex;flex-direction:column;align-items:center;padding:5px 4px 4px;gap:2px}
+.bc-badge{
+  width:36px;height:22px;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
+  flex-shrink:0;
+}
+.bc-name{font-size:8px;font-weight:700;text-align:center;line-height:1.2;color:var(--white);width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.bc-time{font-family:'Barlow Condensed',sans-serif;font-size:8px;color:var(--gold);text-align:center}
+.bc-spot-tag{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:8px;font-weight:700;
+  background:rgba(255,255,255,.12);
+  color:rgba(255,255,255,.45);
+  border-radius:2px;padding:1px 4px;
+  letter-spacing:.5px;text-align:center;
+}
+/* double-tap hint */
+.bc-dbl-hint{
+  font-size:7px;color:rgba(255,255,255,.3);text-align:center;
+  padding-bottom:2px;line-height:1;
+}
+
+/* Rotation button in bench panel */
+.rot-toggle{
+  margin:4px;padding:5px 4px;border-radius:var(--rs);
+  border:1px solid rgba(144,128,248,.4);background:rgba(144,128,248,.15);
+  color:#b0a8f8;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;
+  cursor:pointer;text-align:center;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;
+}
+
+/* Rotation drawer (slides up/in over bench) */
+.rot-drawer{
+  position:absolute;
+  background:rgba(15,30,18,.97);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:8px;
+  z-index:20;
+  display:none;
+  max-height:70vh;
+  overflow-y:auto;
+  min-width:220px;
+}
+.rot-drawer.open{display:block}
+/* landscape: appears to left of bench strip */
+@media (orientation:landscape){
+  .rot-drawer{right:calc(var(--bench-w) + 4px);top:var(--ctrl-h);bottom:auto}
+}
+@media (orientation:portrait){
+  .rot-drawer{bottom:calc(var(--bench-h) + 4px);left:4px;right:4px}
+}
+.rot-drawer::-webkit-scrollbar{width:3px}
+.rot-drawer::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.rotcard{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:var(--rs);padding:6px 8px;margin-bottom:5px}
+.rottitle{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--gold);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between}
+.rottitle span{font-size:9px;color:var(--muted)}
+.rotrow{display:flex;align-items:center;gap:4px;font-size:11px;margin-bottom:2px}
+.rout{color:var(--danger);font-weight:600}.rin{color:var(--good);font-weight:600}
+.rzb{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px}
+.rzB{background:rgba(224,112,80,.25);color:var(--zB)}.rzM{background:rgba(80,212,144,.2);color:var(--zM)}.rzF{background:rgba(144,128,248,.25);color:var(--zF)}
+.bqhdr{font-family:'Barlow Condensed',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 3px}
+.bqitem{display:flex;align-items:center;gap:4px;padding:3px 4px;border-radius:4px;background:rgba(255,255,255,.04);margin-bottom:2px}
+.bqrank{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:var(--muted);width:13px;text-align:center}
+.bqname{font-size:10px;font-weight:600;flex:1}
+.bqtime{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--gold)}
+.bqdef{font-size:9px;color:var(--danger)}
+.rot-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px}
+
+/* PORTRAIT overrides */
+@media (orientation:portrait){
+  .oval-area{right:0;bottom:calc(var(--bench-h) + var(--safe-bot))}
+  .bench-strip{
+    top:auto;right:0;left:0;width:100%;
+    height:calc(var(--bench-h) + var(--safe-bot));
+    border-left:none;border-top:1px solid var(--border);flex-direction:column;
+    padding-bottom:var(--safe-bot);
+  }
+  .bench-scroll{display:flex;flex-direction:row;gap:4px;padding:4px 6px;overflow-x:auto;overflow-y:hidden}
+  .bench-scroll::-webkit-scrollbar{height:2px;width:auto}
+  .bench-chip{flex-direction:row;margin-bottom:0;min-width:76px;max-width:90px;align-items:stretch}
+  .bc-bar{width:4px;height:auto;flex-shrink:0}
+  .bc-body{flex:1;flex-direction:row;padding:4px 5px;gap:4px;align-items:center}
+  .bc-badge{width:28px;height:20px;font-size:10px}
+  .bc-name{font-size:8px;text-align:left;flex:1}
+  .bc-time{font-size:8px}
+  .bc-dbl-hint{display:none}
+  .bench-hdr{flex-direction:row;padding:3px 8px;border-bottom:none;border-right:1px solid var(--border);width:auto;flex-shrink:0;writing-mode:initial}
+}
+
+/* ── DRAG GHOST ── */
+#drag-ghost{
+  position:fixed;pointer-events:none;z-index:999;
+  width:56px;height:36px;border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
+  border:2px solid rgba(255,255,255,.7);
+  transform:translate(-50%,-50%);
+  box-shadow:0 6px 24px rgba(0,0,0,.6);
+  display:none;
+  will-change:transform;
+}
+
+/* Drop highlight on spot */
+.spot-highlight circle.spot-ring{
+  stroke-width:3!important;
+  opacity:1!important;
+  filter:brightness(1.4);
+}
+
+/* ══ ASSIGN MODAL ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+.modal-overlay.hidden{display:none}
+.modal{background:#1a3820;border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:14px;width:min(310px,90vw);max-height:75vh;display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.7)}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:var(--gold);margin-bottom:2px}
+.modal-sub{font-size:10px;color:var(--muted);margin-bottom:9px}
+.modal-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.modal-list::-webkit-scrollbar{width:3px}.modal-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.mpbtn{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.05);cursor:pointer;text-align:left;width:100%;transition:background .1s}
+.mpbtn:active{background:rgba(255,255,255,.12)}
+.mpbtn.current{border-color:var(--gold);background:rgba(240,180,41,.1)}
+.mpbtn.onfield{background:rgba(76,175,114,.1);border-color:rgba(76,175,114,.3)}
+/* Player already assigned to a DIFFERENT spot — greyed, not clickable */
+.mpbtn.placed-elsewhere{
+  opacity:0.3;
+  cursor:not-allowed;
+  pointer-events:none;
+  filter:grayscale(0.8);
+  background:rgba(255,255,255,.02);
+  border-color:rgba(255,255,255,.05);
+}
+.mpname{font-size:12px;font-weight:600;flex:1}
+.mpstatus{font-size:9px;color:var(--muted)}
+.mptime{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--gold)}
+.modal-actions{display:flex;gap:6px;margin-top:9px;flex-shrink:0}
+.mbtn{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:7px;border-radius:var(--rs);border:1px solid var(--border);background:var(--panel);color:var(--white);cursor:pointer}
+.mbtn.clear{border-color:rgba(224,82,82,.4);background:rgba(224,82,82,.15);color:var(--danger)}
+
+/* ══ LINEUP SUGGESTION MODAL ══ */
+.lineup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.lineup-overlay.hidden{display:none}
+.lineup-modal{
+  background:#152a18;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  width:min(680px,96vw);max-height:92vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.8);overflow:hidden;
+}
+.lineup-modal-hdr{
+  padding:12px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,.3);
+}
+.lineup-modal-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--gold)}
+.lineup-modal-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.lineup-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
+
+.lineup-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.lineup-body::-webkit-scrollbar{width:3px}.lineup-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+
+/* Mini oval for lineup preview */
+.lineup-oval-wrap{width:100%;aspect-ratio:700/380;position:relative;border-radius:50%;overflow:hidden;flex-shrink:0}
+.lineup-oval-wrap svg{width:100%;height:100%}
+
+/* Zone column layout */
+.lineup-zones{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.lineup-zone{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.lz-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.lz-title.zB{color:var(--zB)}.lz-title.zM{color:var(--zM)}.lz-title.zF{color:var(--zF)}
+
+.lineup-slot{
+  display:flex;align-items:center;gap:7px;padding:5px 7px;
+  border-radius:var(--rs);margin-bottom:4px;
+  border:1px solid var(--border);background:rgba(255,255,255,.04);
+  cursor:pointer;transition:background .12s;
+}
+.lineup-slot:hover{background:rgba(255,255,255,.09)}
+.lineup-slot.changed{border-color:rgba(240,180,41,.5);background:rgba(240,180,41,.07)}
+.ls-spot{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;color:var(--muted);width:28px;flex-shrink:0}
+.ls-avi{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:800;flex-shrink:0}
+.ls-info{flex:1;min-width:0}
+.ls-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-detail{font-size:9px;color:var(--muted)}
+.ls-time{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--gold);flex-shrink:0}
+/* zone rotation badge */
+.zone-rot{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px}
+.zr-new{background:rgba(76,175,114,.2);color:var(--good)}
+.zr-same{background:rgba(232,160,48,.2);color:var(--warn)}
+
+/* bench row in lineup */
+.lineup-bench{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.lb-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.lb-chips{display:flex;flex-wrap:wrap;gap:5px}
+.lb-chip{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:var(--rs);background:rgba(255,255,255,.06);border:1px solid var(--border)}
+.lb-chip-name{font-size:11px;font-weight:600}
+.lb-chip-time{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--gold)}
+
+/* fairness bar */
+.lineup-fairness{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--rs);padding:6px 10px;display:flex;align-items:center;gap:10px}
+.lf-label{font-size:10px;color:var(--muted);flex-shrink:0}
+.lf-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.lf-bar{height:100%;border-radius:3px;background:var(--good);transition:width .4s}
+.lf-score{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;flex-shrink:0}
+.lf-score.good{color:var(--good)}.lf-score.warn{color:var(--warn)}.lf-score.danger{color:var(--danger)}
+
+.lineup-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:rgba(0,0,0,.3)}
+.lineup-approve{flex:2;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;padding:11px;border-radius:var(--rs);border:none;background:var(--good);color:#0a2010;cursor:pointer;transition:filter .15s}
+.lineup-approve:active{filter:brightness(.9)}
+.lineup-reshuffle{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:11px;border-radius:var(--rs);border:1px solid rgba(144,128,248,.4);background:rgba(144,128,248,.15);color:#b0a8f8;cursor:pointer}
+.lineup-dismiss{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:11px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer}
+
+/* Suggest lineup button in bench strip */
+.suggest-btn{
+  margin:4px;padding:6px 4px;border-radius:var(--rs);
+  border:1px solid rgba(76,175,114,.45);background:rgba(76,175,114,.2);
+  color:var(--good);font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;
+  cursor:pointer;text-align:center;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.suggest-btn .pulse{
+  width:6px;height:6px;border-radius:50%;background:var(--good);
+  animation:pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+/* slot picker sub-modal */
+.slot-picker{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.slot-picker.hidden{display:none}
+.slot-picker-inner{background:#1a3820;border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:14px;width:min(300px,88vw);max-height:70vh;display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.7)}
+.sp-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:var(--gold);margin-bottom:3px}
+.sp-sub{font-size:10px;color:var(--muted);margin-bottom:9px}
+.sp-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.sp-list::-webkit-scrollbar{width:3px}.sp-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.sp-btn{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.05);cursor:pointer;width:100%;transition:background .1s}
+.sp-btn:active{background:rgba(255,255,255,.12)}
+.sp-btn.disabled{opacity:.3;pointer-events:none;cursor:not-allowed}
+.sp-actions{display:flex;gap:6px;margin-top:9px;flex-shrink:0}
+.sp-cancel{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:7px;border-radius:var(--rs);border:1px solid var(--border);background:var(--panel);color:var(--white);cursor:pointer}
+
+/* ══ SAVE / LOAD ══ */
+.save-card{background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.18);border-radius:var(--r);padding:9px 11px}
+.save-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.save-status{font-size:9px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+.save-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sbtn{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;padding:7px 6px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--white);cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .12s}
+.sbtn:active{background:rgba(255,255,255,.14)}
+.sbtn.primary{background:rgba(76,175,114,.2);border-color:rgba(76,175,114,.4);color:var(--good)}
+.sbtn.danger{background:rgba(224,82,82,.15);border-color:rgba(224,82,82,.35);color:var(--danger)}
+.sbtn.gold{background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.35);color:var(--gold)}
+.save-divider{grid-column:1/-1;height:1px;background:var(--border);margin:3px 0}
+/* hidden file input */
+#import-input{display:none}
+
+/* ══ ROSTER TAB ══ */
+#tab-roster{background:var(--grass);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.rost-wrap{padding:10px;display:grid;grid-template-columns:280px 1fr;gap:10px;min-height:100%}
+@media (orientation:portrait){.rost-wrap{grid-template-columns:1fr}}
+.rost-left{display:flex;flex-direction:column;gap:8px}
+.inrow{display:flex;gap:6px}
+.tinput{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px}
+.tinput::placeholder{color:var(--muted)}.tinput:focus{outline:none;border-color:rgba(240,180,41,.5)}
+.addbtn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:8px 12px;border-radius:var(--rs);border:1px solid var(--gold);background:rgba(240,180,41,.2);color:var(--gold);cursor:pointer}
+.rules-card{background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.2);border-radius:var(--r);padding:8px 10px}
+.rtitle{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);text-transform:uppercase;margin-bottom:4px}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.ri{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--white)}
+.rdot{width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.rost-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;align-content:start}
+.rcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:6px}
+.rcavi{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;flex-shrink:0}
+.rcname{font-size:11px;font-weight:600;flex:1}
+.delbtn{background:transparent;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:14px;padding:2px}
+.delbtn:active{color:var(--danger)}
+
+/* ══ REPORT TAB ══ */
+#tab-report{background:var(--grass);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.rep-wrap{padding:10px;display:flex;flex-direction:column;gap:8px}
+.rep-hdr{display:flex;align-items:center;justify-content:space-between}
+.rep-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--gold)}
+.copybtn{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:var(--rs);border:1px solid var(--gold);background:rgba(240,180,41,.15);color:var(--gold);cursor:pointer}
+.rep-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media (orientation:portrait){.rep-stats{grid-template-columns:repeat(2,1fr)}}
+.sb{background:var(--panel);border:1px solid var(--border);border-radius:var(--rs);padding:7px;text-align:center}
+.sb.warn{background:rgba(232,160,48,.2);border-color:rgba(232,160,48,.4)}
+.sb.danger{background:rgba(224,82,82,.2);border-color:rgba(224,82,82,.4)}
+.sb.good{background:rgba(76,175,114,.15);border-color:rgba(76,175,114,.3)}
+.sv{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--white);line-height:1}
+.sb.warn .sv{color:var(--warn)}.sb.danger .sv{color:var(--danger)}.sb.good .sv{color:var(--good)}
+.sl{font-size:9px;color:var(--muted);margin-top:1px}
+.repcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:6px;display:grid;grid-template-columns:170px 1fr auto;gap:8px;align-items:center}
+@media (orientation:portrait){.repcard{grid-template-columns:1fr auto}.repcard .rpzones{display:none}}
+.rpid{display:flex;align-items:center;gap:6px}
+.rpname{font-size:12px;font-weight:600}.rptot{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--muted)}
+.btrack{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:3px}
+.bfill{height:100%;border-radius:3px}
+.rpqs{display:flex;gap:6px;flex-wrap:wrap}.rpq{font-size:10px;color:var(--muted)}
+.rpzones{display:flex;flex-direction:column;gap:2px;align-items:flex-end}
+.rpzb{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:var(--white);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:7px 18px;border-radius:20px;z-index:500;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🏉 AFL U9 &amp; 10</div>
+    <div class="hdr-sub" id="hdr-sub">12-a-side · 4 per zone</div>
+  </div>
+  <div class="hdr-spacer"></div>
+  <div class="tbar">
+    <button class="tbtn active" onclick="showTab('roster',this)">Roster</button>
+    <button class="tbtn" onclick="showTab('game',this)">Game</button>
+    <button class="tbtn" onclick="showTab('report',this)">Report</button>
+  </div>
+</div>
+
+<!-- ══════════ ROSTER ══════════ -->
+<div id="tab-roster" class="tab active" style="top:var(--hdr-h)">
+  <div class="rost-wrap">
+    <div class="rost-left">
+      <div class="inrow">
+        <input class="tinput" id="new-name" placeholder="Add player..." onkeydown="if(event.key==='Enter')addPlayer()">
+        <button class="addbtn" onclick="addPlayer()">+ Add</button>
+      </div>
+
+      <!-- SAVE / LOAD CARD -->
+      <div class="save-card">
+        <div class="save-title">
+          Data &amp; Save
+          <span class="save-status" id="save-status">Not saved yet</span>
+        </div>
+        <div class="save-btns">
+          <button class="sbtn primary" onclick="saveGame()">💾 Save game</button>
+          <button class="sbtn gold" onclick="exportJSON()">⬇ Export file</button>
+          <button class="sbtn" onclick="document.getElementById('import-input').click()">⬆ Import file</button>
+          <button class="sbtn danger" onclick="newGame()">✕ New game</button>
+        </div>
+      </div>
+
+      <div class="rules-card">
+        <div class="rtitle">Official Rules</div>
+        <div class="rgrid">
+          <div class="ri"><div class="rdot"></div>12-a-side</div>
+          <div class="ri"><div class="rdot"></div>4 per zone</div>
+          <div class="ri"><div class="rdot"></div>10 min quarters</div>
+          <div class="ri"><div class="rdot"></div>Size 2 synthetic</div>
+          <div class="ri"><div class="rdot"></div>No scores/ladders</div>
+          <div class="ri"><div class="rdot"></div>No player awards</div>
+          <div class="ri"><div class="rdot"></div>Modified tackling</div>
+          <div class="ri"><div class="rdot"></div>1 bounce max</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted)" id="squad-info"></div>
+    </div>
+    <div class="rost-grid" id="roster-grid"></div>
+  </div>
+</div>
+<!-- Hidden file import input -->
+<input type="file" id="import-input" accept=".json" onchange="importJSON(event)">
+
+<!-- ══════════ GAME ══════════ -->
+<div id="tab-game" class="tab" style="top:var(--hdr-h)">
+
+  <!-- Control strip -->
+  <div class="ctrl-strip">
+    <div class="qbar" id="qbar"></div>
+    <div class="ctrl-div"></div>
+    <div class="timer-big" id="tdisp">0:00</div>
+    <div style="display:flex;flex-direction:column;gap:1px">
+      <div class="timer-lbl" id="tlbl">Drag players onto the oval</div>
+      <div class="timer-rem" id="trem">10:00 left</div>
+    </div>
+    <div class="ctrl-div"></div>
+    <div class="stat-pill" id="sp-on"><div class="sp-val" id="sv-on">0</div><div class="sp-lbl">On</div></div>
+    <div class="stat-pill" id="sp-fair"><div class="sp-val" id="sv-fair">—</div><div class="sp-lbl">Fair</div></div>
+    <div class="ctrl-btns">
+      <button class="cb start" id="btn-start" onclick="startTimer()">▶ Start</button>
+      <button class="cb pause" id="btn-pause" onclick="pauseTimer()" disabled>⏸</button>
+      <button class="cb endq" onclick="endQuarter()">✓ End Q</button>
+    </div>
+  </div>
+
+  <!-- Oval -->
+  <div class="oval-area" id="oval-area">
+    <svg id="oval-svg" viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="gGrass" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#2d6636"/>
+          <stop offset="100%" stop-color="#1b4422"/>
+        </radialGradient>
+        <pattern id="stripes" patternUnits="userSpaceOnUse" width="34" height="34">
+          <rect width="17" height="34" fill="rgba(0,0,0,0.042)"/>
+        </pattern>
+        <clipPath id="ovalClip"><ellipse cx="350" cy="190" rx="335" ry="178"/></clipPath>
+        <filter id="tok-shadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.5"/></filter>
+      </defs>
+
+      <!-- Ground -->
+      <ellipse cx="350" cy="190" rx="345" ry="185" fill="#3a3a3a"/>
+      <ellipse cx="350" cy="190" rx="335" ry="178" fill="url(#gGrass)"/>
+      <rect x="15" y="12" width="670" height="356" fill="url(#stripes)" clip-path="url(#ovalClip)"/>
+
+      <!-- Zone tints -->
+      <path d="M 15,78 Q 58,12 178,28 Q 238,190 178,352 Q 58,368 15,302 Z" fill="rgba(224,112,80,0.14)" clip-path="url(#ovalClip)"/>
+      <path d="M 685,78 Q 642,12 522,28 Q 462,190 522,352 Q 642,368 685,302 Z" fill="rgba(144,128,248,0.14)" clip-path="url(#ovalClip)"/>
+      <rect x="178" y="0" width="344" height="380" fill="rgba(80,212,144,0.07)" clip-path="url(#ovalClip)"/>
+
+      <!-- Zone arcs -->
+      <path d="M 178,28 Q 238,190 178,352" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <path d="M 522,28 Q 462,190 522,352" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+
+      <!-- Centre markings -->
+      <rect x="258" y="112" width="184" height="156" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+      <circle cx="350" cy="190" r="36" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+      <circle cx="350" cy="190" r="5" fill="rgba(255,255,255,0.55)"/>
+
+      <!-- Goal posts Back -->
+      <line x1="16" y1="163" x2="46" y2="163" stroke="#ccc" stroke-width="2.5"/><circle cx="26" cy="163" r="3.5" fill="#e05252"/>
+      <line x1="16" y1="181" x2="46" y2="181" stroke="#ccc" stroke-width="2.5"/><circle cx="26" cy="181" r="3.5" fill="#e05252"/>
+      <line x1="16" y1="199" x2="46" y2="199" stroke="#ccc" stroke-width="2.5"/><circle cx="26" cy="199" r="3.5" fill="#e05252"/>
+      <line x1="16" y1="217" x2="46" y2="217" stroke="#ccc" stroke-width="2.5"/><circle cx="26" cy="217" r="3.5" fill="#e05252"/>
+      <!-- Goal posts Fwd -->
+      <line x1="684" y1="163" x2="654" y2="163" stroke="#ccc" stroke-width="2.5"/><circle cx="674" cy="163" r="3.5" fill="#e05252"/>
+      <line x1="684" y1="181" x2="654" y2="181" stroke="#ccc" stroke-width="2.5"/><circle cx="674" cy="181" r="3.5" fill="#e05252"/>
+      <line x1="684" y1="199" x2="654" y2="199" stroke="#ccc" stroke-width="2.5"/><circle cx="674" cy="199" r="3.5" fill="#e05252"/>
+      <line x1="684" y1="217" x2="654" y2="217" stroke="#ccc" stroke-width="2.5"/><circle cx="674" cy="217" r="3.5" fill="#e05252"/>
+
+      <!-- Zone labels -->
+      <text x="95" y="196" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(255,255,255,0.2)" text-anchor="middle" letter-spacing="1">BACK</text>
+      <text x="350" y="23" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(255,255,255,0.2)" text-anchor="middle" letter-spacing="1">MIDFIELD</text>
+      <text x="605" y="196" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(255,255,255,0.2)" text-anchor="middle" letter-spacing="1">FORWARD</text>
+
+      <!-- ── SPOTS ── each has a .spot-ring circle + label text -->
+      <!-- BACK -->
+      <g class="spot" id="spot-B1" data-spot="B1" onclick="handleSpotTap('B1')">
+        <circle class="spot-ring" cx="100" cy="128" r="22" fill="rgba(224,112,80,.15)" stroke="rgba(224,112,80,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="100" y="128" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">BP</text>
+      </g>
+      <g class="spot" id="spot-B2" data-spot="B2" onclick="handleSpotTap('B2')">
+        <circle class="spot-ring" cx="138" cy="190" r="22" fill="rgba(224,112,80,.15)" stroke="rgba(224,112,80,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="138" y="190" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">FB</text>
+      </g>
+      <g class="spot" id="spot-B3" data-spot="B3" onclick="handleSpotTap('B3')">
+        <circle class="spot-ring" cx="100" cy="252" r="22" fill="rgba(224,112,80,.15)" stroke="rgba(224,112,80,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="100" y="252" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">BP</text>
+      </g>
+      <g class="spot" id="spot-B4" data-spot="B4" onclick="handleSpotTap('B4')">
+        <circle class="spot-ring" cx="55" cy="190" r="22" fill="rgba(224,112,80,.15)" stroke="rgba(224,112,80,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="55" y="190" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">CHB</text>
+      </g>
+      <!-- MID -->
+      <g class="spot" id="spot-M1" data-spot="M1" onclick="handleSpotTap('M1')">
+        <circle class="spot-ring" cx="285" cy="136" r="22" fill="rgba(80,212,144,.12)" stroke="rgba(80,212,144,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="285" y="136" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">Wing</text>
+      </g>
+      <g class="spot" id="spot-M2" data-spot="M2" onclick="handleSpotTap('M2')">
+        <circle class="spot-ring" cx="415" cy="136" r="22" fill="rgba(80,212,144,.12)" stroke="rgba(80,212,144,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="415" y="136" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">Wing</text>
+      </g>
+      <g class="spot" id="spot-M3" data-spot="M3" onclick="handleSpotTap('M3')">
+        <circle class="spot-ring" cx="285" cy="244" r="22" fill="rgba(80,212,144,.12)" stroke="rgba(80,212,144,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="285" y="244" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">C</text>
+      </g>
+      <g class="spot" id="spot-M4" data-spot="M4" onclick="handleSpotTap('M4')">
+        <circle class="spot-ring" cx="415" cy="244" r="22" fill="rgba(80,212,144,.12)" stroke="rgba(80,212,144,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="415" y="244" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">C</text>
+      </g>
+      <!-- FWD -->
+      <g class="spot" id="spot-F1" data-spot="F1" onclick="handleSpotTap('F1')">
+        <circle class="spot-ring" cx="600" cy="128" r="22" fill="rgba(144,128,248,.15)" stroke="rgba(144,128,248,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="600" y="128" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">FP</text>
+      </g>
+      <g class="spot" id="spot-F2" data-spot="F2" onclick="handleSpotTap('F2')">
+        <circle class="spot-ring" cx="562" cy="190" r="22" fill="rgba(144,128,248,.15)" stroke="rgba(144,128,248,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="562" y="190" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">FF</text>
+      </g>
+      <g class="spot" id="spot-F3" data-spot="F3" onclick="handleSpotTap('F3')">
+        <circle class="spot-ring" cx="600" cy="252" r="22" fill="rgba(144,128,248,.15)" stroke="rgba(144,128,248,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="600" y="252" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">FP</text>
+      </g>
+      <g class="spot" id="spot-F4" data-spot="F4" onclick="handleSpotTap('F4')">
+        <circle class="spot-ring" cx="645" cy="190" r="22" fill="rgba(144,128,248,.15)" stroke="rgba(144,128,248,.75)" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="645" y="190" font-family="Barlow Condensed" font-size="9" font-weight="700" fill="rgba(255,255,255,.5)" text-anchor="middle" dominant-baseline="central" pointer-events="none">CHF</text>
+      </g>
+
+      <!-- Player token layer -->
+      <g id="tokens-layer"></g>
+
+      <!-- Zone count badges -->
+      <text id="zcnt-B" x="95" y="365" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(224,112,80,.85)" text-anchor="middle">0/4</text>
+      <text id="zcnt-M" x="350" y="375" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(80,212,144,.85)" text-anchor="middle">0/4</text>
+      <text id="zcnt-F" x="605" y="365" font-family="Barlow Condensed" font-size="13" font-weight="700" fill="rgba(144,128,248,.85)" text-anchor="middle">0/4</text>
+    </svg>
+  </div>
+
+  <!-- Bench strip -->
+  <div class="bench-strip" id="bench-strip">
+    <div class="bench-hdr">
+      <span>BENCH</span>
+      <span id="bench-count" style="color:var(--gold)">0</span>
+    </div>
+    <div class="bench-scroll" id="bench-scroll"></div>
+    <button class="suggest-btn" onclick="openLineupSuggestion()"><div class="pulse"></div> SUGGEST LINEUP</button>
+    <button class="rot-toggle" onclick="toggleRotDrawer()">⟳ ROTATIONS</button>
+  </div>
+
+  <!-- Rotation drawer -->
+  <div class="rot-drawer" id="rot-drawer">
+    <button class="rot-close" onclick="toggleRotDrawer()">✕</button>
+    <div id="rot-content"></div>
+  </div>
+
+</div>
+
+<!-- ══════════ REPORT ══════════ -->
+<div id="tab-report" class="tab" style="top:var(--hdr-h)">
+  <div class="rep-wrap">
+    <div class="rep-hdr">
+      <div class="rep-title">Game Summary</div>
+      <button class="copybtn" onclick="copyReport()">⎘ Copy for parents</button>
+    </div>
+    <div class="rep-stats" id="rep-stats"></div>
+    <div id="rep-scroll"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Assign Player</div>
+    <div class="modal-sub" id="modal-sub">Tap to assign, or drag from bench</div>
+    <div class="modal-list" id="modal-list"></div>
+    <div class="modal-actions">
+      <button class="mbtn clear" onclick="clearSpot()">Clear spot</button>
+      <button class="mbtn" onclick="closeModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINEUP SUGGESTION MODAL -->
+<div class="lineup-overlay hidden" id="lineup-overlay">
+  <div class="lineup-modal">
+    <div class="lineup-modal-hdr">
+      <div>
+        <div class="lineup-modal-title" id="lineup-modal-title">Suggested Lineup — Q1</div>
+        <div class="lineup-modal-sub" id="lineup-modal-sub">Based on fairness · tap any slot to change player</div>
+      </div>
+      <button class="lineup-close" onclick="closeLineup()">✕</button>
+    </div>
+    <div class="lineup-body">
+      <div class="lineup-fairness" id="lineup-fairness"></div>
+      <div class="lineup-zones" id="lineup-zones"></div>
+      <div class="lineup-bench" id="lineup-bench-section"></div>
+    </div>
+    <div class="lineup-footer">
+      <button class="lineup-approve" onclick="approveLineup()">✓ Apply This Lineup</button>
+      <button class="lineup-reshuffle" onclick="reshuffleLineup()">↺ Reshuffle</button>
+      <button class="lineup-dismiss" onclick="closeLineup()">Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- SLOT PICKER (change one slot in lineup) -->
+<div class="slot-picker hidden" id="slot-picker">
+  <div class="slot-picker-inner">
+    <div class="sp-title" id="sp-title">Change Player</div>
+    <div class="sp-sub" id="sp-sub">Select a replacement</div>
+    <div class="sp-list" id="sp-list"></div>
+    <div class="sp-actions">
+      <button class="sp-cancel" onclick="closeSlotPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drag ghost -->
+<div id="drag-ghost"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─── DATA ─── */
+const SQUAD=["Samuel","Myles","Wilson","Kai",
+  "Zephyr","Arlo","Saxon",
+  "Marcus","Hudson","Luca","Reuben",
+  "Ryan","Iziah","Seamus","Patrick"];
+const MAX_ON=12,MAX_ZONE=4,Q_SECS=600;
+
+const SPOT_POS={
+  B1:{x:100,y:128},B2:{x:138,y:190},B3:{x:100,y:252},B4:{x:55,y:190},
+  M1:{x:285,y:136},M2:{x:415,y:136},M3:{x:285,y:244},M4:{x:415,y:244},
+  F1:{x:600,y:128},F2:{x:562,y:190},F3:{x:600,y:252},F4:{x:645,y:190}
+};
+const SPOT_ZONE={B1:'B',B2:'B',B3:'B',B4:'B',M1:'M',M2:'M',M3:'M',M4:'M',F1:'F',F2:'F',F3:'F',F4:'F'};
+const POS_NAMES={
+  B1:'Back Pocket',  B2:'Full Back',       B3:'Back Pocket',  B4:'Centre Half Back',
+  M1:'Wing',         M2:'Wing',             M3:'Centre',       M4:'Centre',
+  F1:'Forward Pocket',F2:'Full Forward',   F3:'Forward Pocket',F4:'Centre Half Fwd'
+};
+const SPOT_IDS=Object.keys(SPOT_POS);
+
+const AVI=[
+  ['#5a4ac0','#d4cfff'],['#2d8a5e','#a0f0c8'],['#c05a30','#ffc4a8'],
+  ['#185fa5','#a8d4ff'],['#854f0b','#ffd89a'],['#993556','#ffb8d0'],
+  ['#0f6e56','#8eefd0'],['#444441','#d0cec8'],['#3b6d11','#c0e890'],
+  ['#712b13','#ffb09a'],['#3c3489','#cecbf6'],['#085041','#9fe1cb'],
+  ['#633806','#fac775'],['#72243e','#f4c0d1'],['#0c447c','#b5d4f4']
+];
+
+let players=[],currentQ=1,timerSecs=0,timerRunning=false,timerInterval=null;
+let quarterDone=[false,false,false,false],activeSpot=null;
+
+function pid(){return Date.now()+Math.random()}
+function mkP(name,idx){return{id:pid(),name,ci:idx%AVI.length,onField:false,zone:'M',spot:null,
+  timeByQ:{1:0,2:0,3:0,4:0},zoneTime:{F:0,M:0,B:0},lastToggle:null,fieldSince:null}}
+SQUAD.forEach((n,i)=>players.push(mkP(n,i)));
+
+function initials(n){return n.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)}
+function ac(p){return AVI[p.ci]||AVI[0]}
+function totalTime(p){return Object.values(p.timeByQ).reduce((s,v)=>s+v,0)}
+function fmt(s){s=Math.max(0,s);return`${Math.floor(s/60)}:${String(Math.floor(s)%60).padStart(2,'0')}`}
+function onCount(){return players.filter(p=>p.onField).length}
+function zCount(z){return players.filter(p=>p.onField&&p.zone===z).length}
+function liveTime(p){if(!p.onField||!p.fieldSince)return 0;return(Date.now()-p.fieldSince)/1000}
+function totalLive(p){return totalTime(p)+liveTime(p)}
+
+/* ─── TOAST ─── */
+function toast(msg,ms=1800){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+/* ─── ORIENTATION ─── */
+function isPortrait(){return window.innerHeight>window.innerWidth}
+function updateOrient(){
+  document.getElementById('hdr-sub').textContent=`12-a-side · 4/zone · ${isPortrait()?'Portrait':'Landscape'}`;
+}
+let lastOr=isPortrait()?'p':'l';
+function onResize(){
+  const cur=isPortrait()?'p':'l';
+  if(cur!==lastOr){lastOr=cur;toast(cur==='p'?'↕ Portrait':'↔ Landscape');updateOrient()}
+}
+window.addEventListener('resize',onResize);
+window.addEventListener('orientationchange',()=>setTimeout(onResize,300));
+
+/* ─── DRAG & DROP ENGINE ─── */
+let dragPlayerId=null;
+let dragSourceSpot=null;   // spot the drag originated from (null = from bench)
+let dragGhost=document.getElementById('drag-ghost');
+let hoveredSpot=null;
+
+function svgPoint(clientX,clientY){
+  const svg=document.getElementById('oval-svg');
+  const rect=svg.getBoundingClientRect();
+  const vb=svg.viewBox.baseVal; // 0 0 700 380
+  const scaleX=vb.width/rect.width;
+  const scaleY=vb.height/rect.height;
+  return{x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY};
+}
+
+function nearestSpot(svgX,svgY){
+  let best=null,bestDist=65; // px in SVG coords — generous snap radius for on-field drags
+  SPOT_IDS.forEach(sid=>{
+    const pos=SPOT_POS[sid];
+    const d=Math.hypot(svgX-pos.x,svgY-pos.y);
+    if(d<bestDist){bestDist=d;best=sid}
+  });
+  return best;
+}
+
+function startDrag(playerId,clientX,clientY,sourceSpot=null){
+  const p=players.find(x=>x.id===playerId);if(!p)return;
+  dragPlayerId=playerId;
+  dragSourceSpot=sourceSpot;
+  const[bg,fg]=ac(p);
+  const first=p.name.split(' ')[0];
+  const lastInit=p.name.split(' ').slice(1).map(w=>w[0]).join('');
+  dragGhost.style.cssText=`display:flex;background:${bg};color:${fg};left:${clientX}px;top:${clientY}px`;
+  dragGhost.innerHTML=`<span style="font-size:10px;font-weight:800;line-height:1">${first}</span>${lastInit?`<span style="font-size:8px;opacity:.75">${lastInit}.</span>`:''}`;
+  // Dim bench chip if dragging from bench
+  const chip=document.getElementById('chip-'+playerId);
+  if(chip)chip.classList.add('dragging');
+  // Dim the token on the oval if dragging from a spot
+  if(sourceSpot){
+    const tokenG=document.getElementById('tok-'+playerId);
+    if(tokenG)tokenG.style.opacity='0.3';
+  }
+}
+
+/* ─── DOUBLE-TAP / DOUBLE-CLICK AUTO-ASSIGN ─── */
+// Finds the best free spot and assigns the player automatically
+function autoAssignPlayer(playerId){
+  const p=players.find(x=>x.id===playerId);
+  if(!p||p.onField)return;
+  if(onCount()>=MAX_ON){toast('Field full — sub someone off first');return}
+
+  // Find a free spot, prefer zones with fewest players (balance zones)
+  const zoneCounts={B:zCount('B'),M:zCount('M'),F:zCount('F')};
+  const zoneOrder=['B','M','F'];
+
+  // Prefer zone player hasn't been in recently
+  function zoneScore(z){
+    const cnt=zoneCounts[z];
+    if(cnt>=MAX_ZONE)return 999; // full
+    const hist=p.zoneHistory||[];
+    const last=hist[hist.length-1];
+    const lastTwo=hist.slice(-2);
+    let penalty=cnt*10; // prefer emptier zones
+    if(lastTwo.every(z2=>z2===z))penalty+=30;
+    else if(last===z)penalty+=10;
+    return penalty;
+  }
+
+  const sortedZones=[...zoneOrder].sort((a,b)=>zoneScore(a)-zoneScore(b));
+  const zoneSlots={B:['B1','B2','B3','B4'],M:['M1','M2','M3','M4'],F:['F1','F2','F3','F4']};
+  let targetSpot=null;
+  for(const z of sortedZones){
+    if(zoneCounts[z]>=MAX_ZONE)continue;
+    const freeSpot=zoneSlots[z].find(sid=>!players.find(x=>x.spot===sid));
+    if(freeSpot){targetSpot=freeSpot;break}
+  }
+
+  if(!targetSpot){toast('No free spots on the oval');return}
+  doAssign(playerId,targetSpot);
+  toast(`${p.name.split(' ')[0]} → ${POS_NAMES[targetSpot]} (auto-placed)`);
+}
+
+// Attach double-click (mouse) and double-tap (touch) to a bench chip
+function attachDoubleTap(el,playerId){
+  // Mouse double-click
+  el.addEventListener('dblclick',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    autoAssignPlayer(playerId);
+  });
+  // Touch double-tap (two taps within 300ms)
+  let lastTap=0;
+  el.addEventListener('touchend',e=>{
+    // Don't fire if this was a drag
+    if(dragPlayerId)return;
+    const now=Date.now();
+    const gap=now-lastTap;
+    if(gap<300&&gap>0){
+      e.preventDefault();
+      e.stopPropagation();
+      autoAssignPlayer(playerId);
+    }
+    lastTap=now;
+  });
+}
+
+function moveDrag(clientX,clientY){
+  if(!dragPlayerId)return;
+  dragGhost.style.left=clientX+'px';
+  dragGhost.style.top=clientY+'px';
+  const svgP=svgPoint(clientX,clientY);
+  const nearest=nearestSpot(svgP.x,svgP.y);
+  if(nearest!==hoveredSpot){
+    if(hoveredSpot){const sg=document.getElementById('spot-'+hoveredSpot);if(sg)sg.classList.remove('spot-highlight')}
+    hoveredSpot=nearest;
+    if(nearest){const sg=document.getElementById('spot-'+nearest);if(sg)sg.classList.add('spot-highlight')}
+  }
+}
+
+function endDrag(clientX,clientY){
+  if(!dragPlayerId){hoveredSpot=null;return}
+  const pid_=dragPlayerId;
+  const srcSpot=dragSourceSpot;
+  dragPlayerId=null;
+  dragSourceSpot=null;
+  dragGhost.style.display='none';
+  if(hoveredSpot){document.getElementById('spot-'+hoveredSpot)?.classList.remove('spot-highlight')}
+  // Restore bench chip opacity
+  const chip=document.getElementById('chip-'+pid_);
+  if(chip)chip.classList.remove('dragging');
+  // Restore token opacity
+  const tokenG=document.getElementById('tok-'+pid_);
+  if(tokenG)tokenG.style.opacity='1';
+  const svgP=svgPoint(clientX,clientY);
+  const target=hoveredSpot||nearestSpot(svgP.x,svgP.y);
+  hoveredSpot=null;
+  // Only assign if dropped on a different spot (or no source spot = from bench)
+  if(target&&target!==srcSpot){
+    doAssign(pid_,target);
+  } else if(srcSpot&&!target){
+    // Dropped outside any spot — leave player where they were (no-op)
+  }
+}
+
+// Pointer events on bench chips
+function attachDragToChip(el,playerId){
+  // Touch
+  el.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    startDrag(playerId,t.clientX,t.clientY);
+  },{passive:false});
+  el.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    moveDrag(t.clientX,t.clientY);
+  },{passive:false});
+  el.addEventListener('touchend',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];
+    endDrag(t.clientX,t.clientY);
+  },{passive:false});
+  // Mouse (desktop/trackpad testing)
+  el.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    startDrag(playerId,e.clientX,e.clientY);
+    const mm=ev=>{moveDrag(ev.clientX,ev.clientY)};
+    const mu=ev=>{endDrag(ev.clientX,ev.clientY);document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+// Attach drag events to on-field SVG tokens (drag from spot to spot)
+function attachDragToToken(el,playerId,spotId){
+  // Distinguish a tap (click) from a drag: track move distance
+  let startX=0,startY=0,didDrag=false;
+  const DRAG_THRESHOLD=8; // px — move more than this = it's a drag
+
+  // Double-tap (touch) — move to bench
+  let lastTokTap=0;
+
+  // Touch
+  el.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    startX=t.clientX;startY=t.clientY;didDrag=false;
+  },{passive:true});
+  el.addEventListener('touchmove',e=>{
+    const t=e.touches[0];
+    const dx=Math.abs(t.clientX-startX),dy=Math.abs(t.clientY-startY);
+    if(!didDrag&&(dx>DRAG_THRESHOLD||dy>DRAG_THRESHOLD)){
+      didDrag=true;
+      e.preventDefault();
+      startDrag(playerId,t.clientX,t.clientY,spotId);
+    }
+    if(didDrag){e.preventDefault();moveDrag(t.clientX,t.clientY)}
+  },{passive:false});
+  el.addEventListener('touchend',e=>{
+    if(didDrag){
+      e.preventDefault();
+      const t=e.changedTouches[0];
+      endDrag(t.clientX,t.clientY);
+    } else {
+      // Check for double-tap
+      const now=Date.now();
+      const gap=now-lastTokTap;
+      if(gap<300&&gap>0){
+        e.preventDefault();
+        e.stopPropagation();
+        moveToBench(playerId);
+      }
+      lastTokTap=now;
+    }
+    didDrag=false;
+  },{passive:false});
+
+  // Mouse double-click — move to bench
+  el.addEventListener('dblclick',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    moveToBench(playerId);
+  });
+
+  // Mouse single drag
+  el.addEventListener('mousedown',e=>{
+    startX=e.clientX;startY=e.clientY;didDrag=false;
+    const mm=ev=>{
+      const dx=Math.abs(ev.clientX-startX),dy=Math.abs(ev.clientY-startY);
+      if(!didDrag&&(dx>DRAG_THRESHOLD||dy>DRAG_THRESHOLD)){
+        didDrag=true;
+        startDrag(playerId,ev.clientX,ev.clientY,spotId);
+      }
+      if(didDrag)moveDrag(ev.clientX,ev.clientY);
+    };
+    const mu=ev=>{
+      if(didDrag)endDrag(ev.clientX,ev.clientY);
+      didDrag=false;
+      document.removeEventListener('mousemove',mm);
+      document.removeEventListener('mouseup',mu);
+    };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+/* Move an on-field player back to the bench */
+function moveToBench(playerId){
+  const p=players.find(x=>x.id===playerId);
+  if(!p||!p.onField)return;
+  bankTime(p);
+  p.spot=null;p.onField=false;p.lastToggle=null;p.fieldSince=null;
+  renderAll();
+  autoSave();
+  toast(`${p.name.split(' ')[0]} → Bench`);
+}
+function doAssign(playerId,spotId){
+  const p=players.find(x=>x.id===playerId);if(!p)return;
+  const targetZone=SPOT_ZONE[spotId];
+  // bump previous occupant off
+  const prev=players.find(x=>x.spot===spotId&&x.id!==playerId);
+  if(prev){bankTime(prev);prev.spot=null;prev.onField=false;prev.lastToggle=null;prev.fieldSince=null}
+  if(p.onField)bankTime(p);
+  p.spot=spotId;p.zone=targetZone;p.onField=true;
+  if(timerRunning){p.lastToggle=Date.now();p.fieldSince=Date.now()}
+  else{p.lastToggle=null;p.fieldSince=null}
+  renderAll();
+  toast(`${p.name.split(' ')[0]} → ${POS_NAMES[spotId]}`);
+  autoSave();
+}
+
+function bankTime(p){
+  if(!timerRunning||!p.lastToggle)return;
+  const s=Math.round((Date.now()-p.lastToggle)/1000);
+  p.timeByQ[currentQ]=(p.timeByQ[currentQ]||0)+s;
+  p.zoneTime[p.zone]=(p.zoneTime[p.zone]||0)+s;
+  p.lastToggle=null;p.fieldSince=null;
+}
+
+/* ─── SPOT TAP (fallback for non-drag) ─── */
+function handleSpotTap(spotId){
+  if(dragPlayerId)return; // ignore clicks during drag
+  activeSpot=spotId;
+  const zone=SPOT_ZONE[spotId];
+  const zName=zone==='B'?'Back':zone==='M'?'Mid':'Forward';
+  document.getElementById('modal-title').textContent=`${zName} — ${POS_NAMES[spotId]}`;
+  document.getElementById('modal-sub').textContent='Tap to assign · or drag from bench';
+  const sorted=[...players].sort((a,b)=>{
+    // current spot player first, then free bench, then placed-elsewhere last
+    const aScore=a.spot===spotId?0:!a.onField?1:2;
+    const bScore=b.spot===spotId?0:!b.onField?1:2;
+    if(aScore!==bScore)return aScore-bScore;
+    return totalLive(a)-totalLive(b);
+  });
+  document.getElementById('modal-list').innerHTML=sorted.map(p=>{
+    const[bg,fg]=ac(p);
+    const cur=p.spot===spotId;
+    const placedElsewhere=p.onField&&p.spot&&p.spot!==spotId;
+    let cls='mpbtn';
+    if(cur) cls='mpbtn current';
+    else if(placedElsewhere) cls='mpbtn placed-elsewhere';
+    else if(p.onField) cls='mpbtn onfield';
+    const status=cur?'✓ This spot'
+      :placedElsewhere?`Already at ${p.spot} — ${POS_NAMES[p.spot]}`
+      :p.onField?`On – ${POS_NAMES[p.spot]||p.zone}`
+      :'Bench';
+    const disabled=placedElsewhere?'disabled':'';
+    return`<button class="${cls}" onclick="${placedElsewhere?'':` modalAssign(${p.id})`}" ${disabled}>
+      <div class="pavi" style="background:${placedElsewhere?'#444':bg};color:${placedElsewhere?'#666':fg};width:26px;height:26px;font-size:9px;flex-shrink:0">${initials(p.name)}</div>
+      <div style="flex:1;min-width:0"><div class="mpname">${p.name}</div><div class="mpstatus">${status}</div></div>
+      <div class="mptime">${fmt(totalLive(p))}</div>
+    </button>`;
+  }).join('');
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function modalAssign(pid_){doAssign(pid_,activeSpot);closeModal()}
+function clearSpot(){
+  if(!activeSpot)return;
+  const p=players.find(x=>x.spot===activeSpot);
+  if(p){bankTime(p);p.spot=null;p.onField=false;p.lastToggle=null;p.fieldSince=null}
+  closeModal();renderAll();
+}
+function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');activeSpot=null}
+
+/* ─── OVAL RENDER ─── */
+function updateOval(){
+  SPOT_IDS.forEach(sid=>{
+    const sg=document.getElementById('spot-'+sid);if(!sg)return;
+    const occ=players.find(p=>p.spot===sid);
+    sg.querySelector('circle').style.opacity=occ?'0':'1';
+    sg.querySelector('text').style.opacity=occ?'0':'1';
+  });
+  let html='';
+  players.filter(p=>p.onField&&p.spot).forEach(p=>{
+    const pos=SPOT_POS[p.spot];if(!pos)return;
+    const[bg,fg]=ac(p);
+    const parts=p.name.split(' ');
+    const firstName=parts[0];
+    const lastName=parts.slice(1).join(' ');
+    const dispFirst=firstName.length>9?firstName.slice(0,9)+'…':firstName;
+    const dispLast=lastName?lastName[0]+'.':'';
+    const W=72,H=52,rx=6;
+    const x=pos.x-W/2, y=pos.y-H/2;
+    // Give each token a stable id so we can fade it during drag
+    html+=`<g id="tok-${p.id}" data-player-id="${p.id}" data-spot="${p.spot}" onclick="handleSpotTap('${p.spot}')" style="cursor:grab" filter="url(#tok-shadow)">
+      <rect x="${x}" y="${y}" width="${W}" height="${H}" rx="${rx}" fill="${bg}" stroke="${fg}" stroke-width="2"/>
+      <text x="${pos.x}" y="${pos.y-12}" font-family="Barlow Condensed" font-size="13" font-weight="800" fill="${fg}" text-anchor="middle" pointer-events="none">${dispFirst}</text>
+      <text x="${pos.x}" y="${pos.y+2}" font-family="Barlow Condensed" font-size="11" font-weight="600" fill="${fg}" opacity="0.8" text-anchor="middle" pointer-events="none">${dispLast}</text>
+      <text x="${pos.x}" y="${pos.y+17}" id="ptok-${p.id}" font-family="Barlow Condensed" font-size="11" font-weight="700" fill="${fg}" opacity="0.95" text-anchor="middle" pointer-events="none">${fmt(totalLive(p))}</text>
+    </g>`;
+  });
+  document.getElementById('tokens-layer').innerHTML=html;
+
+  // Attach drag-from-spot handlers to each on-field token
+  players.filter(p=>p.onField&&p.spot).forEach(p=>{
+    const el=document.getElementById('tok-'+p.id);
+    if(el)attachDragToToken(el,p.id,p.spot);
+  });
+
+  ['B','M','F'].forEach(z=>{
+    const c=zCount(z);
+    const el=document.getElementById('zcnt-'+z);if(!el)return;
+    el.textContent=`${c}/4`;
+    el.setAttribute('fill',c>MAX_ZONE?'#e05252':z==='B'?'rgba(224,112,80,.9)':z==='M'?'rgba(80,212,144,.9)':'rgba(144,128,248,.9)');
+  });
+}
+
+/* ─── BENCH RENDER ─── */
+function renderBench(){
+  const avg=players.length?players.reduce((s,p)=>s+totalLive(p),0)/players.length:0;
+  const benchPlayers=[...players].sort((a,b)=>{
+    const aPlaced=a.onField?1:0, bPlaced=b.onField?1:0;
+    if(aPlaced!==bPlaced)return aPlaced-bPlaced;
+    return totalLive(a)-totalLive(b);
+  });
+  const freeBench=benchPlayers.filter(p=>!p.onField);
+  document.getElementById('bench-count').textContent=freeBench.length;
+  const wrap=document.getElementById('bench-scroll');
+  wrap.innerHTML=benchPlayers.map(p=>{
+    const[bg,fg]=ac(p);
+    const placed=p.onField&&p.spot;
+    const diff=totalLive(p)-avg;
+    const fairCls=(!placed&&diff<-30)?'needs':(!placed&&diff>30)?'excess':'';
+    const placedCls=placed?'placed':'';
+    const parts=p.name.split(' ');
+    const first=parts[0];
+    const last=parts.slice(1).map(w=>w[0]).join('');
+    const dispName=last?`${first} ${last}.`:first;
+    return`<div class="bench-chip ${fairCls} ${placedCls}" id="chip-${p.id}" title="${p.name} — double-tap to auto-place">
+      <div class="bc-bar" style="background:${placed?'#555':bg}"></div>
+      <div class="bc-body">
+        <div class="bc-badge" style="background:${placed?'#333':bg};color:${placed?'#666':fg}">${initials(p.name)}</div>
+        <div class="bc-name">${dispName}</div>
+        ${placed
+          ? `<div class="bc-spot-tag">${p.spot}</div>`
+          : `<div class="bc-time" id="btime-${p.id}">${fmt(totalLive(p))}</div>`
+        }
+      </div>
+      ${!placed?`<div class="bc-dbl-hint">dbl-tap to add</div>`:''}
+    </div>`;
+  }).join('');
+  // attach drag + double-tap only to non-placed players
+  benchPlayers.filter(p=>!p.onField).forEach(p=>{
+    const el=document.getElementById('chip-'+p.id);
+    if(el){
+      attachDragToChip(el,p.id);
+      attachDoubleTap(el,p.id);
+    }
+  });
+}
+
+/* ─── STATS ─── */
+function updateStats(){
+  const on=onCount();
+  const rem=Math.max(0,Q_SECS-timerSecs);
+  document.getElementById('sv-on').textContent=on;
+  document.getElementById('trem').textContent=fmt(rem)+' left';
+  const sc=document.getElementById('sp-on');
+  sc.className='stat-pill'+(on===MAX_ON?' sp-good':on>MAX_ON?' sp-danger':on>=10?'':' sp-warn');
+  if(players.length>1){
+    const times=players.map(totalLive);
+    const spread=Math.max(...times)-Math.min(...times);
+    document.getElementById('sv-fair').textContent=spread>120?'⚠':spread>60?'OK':'✓';
+    document.getElementById('sp-fair').className='stat-pill'+(spread>120?' sp-danger':spread>60?' sp-warn':' sp-good');
+  }
+}
+
+/* ─── ROTATION ─── */
+function toggleRotDrawer(){
+  const d=document.getElementById('rot-drawer');
+  const open=d.classList.toggle('open');
+  if(open)renderRotation();
+}
+function renderRotation(){
+  const bench=players.filter(p=>!p.onField).sort((a,b)=>totalLive(a)-totalLive(b));
+  const onF=players.filter(p=>p.onField).sort((a,b)=>totalLive(b)-totalLive(a));
+  const wrap=document.getElementById('rot-content');
+  if(!bench.length||!onF.length){wrap.innerHTML='<div style="font-size:11px;color:var(--muted);padding:8px">Assign players first.</div>';return}
+  const avg=players.reduce((s,p)=>s+totalLive(p),0)/Math.max(players.length,1);
+  const rotN=Math.min(bench.length,3);
+  const usedOut=new Set(),usedIn=new Set();
+  let html='<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Suggested Rotations</div>';
+  for(let i=0;i<rotN;i++){
+    const inP=bench.find(p=>!usedIn.has(p.id));
+    const outP=onF.find(p=>!usedOut.has(p.id));
+    if(!inP||!outP)break;
+    const deficit=Math.round(avg-totalLive(inP));
+    html+=`<div class="rotcard">
+      <div class="rottitle">Swap ${i+1}<span>${POS_NAMES[outP.spot]||outP.zone}</span></div>
+      <div class="rotrow">
+        <span class="rout">↓ ${outP.name.split(' ')[0]}</span>
+        <span style="color:var(--muted);margin:0 3px">→</span>
+        <span class="rin">↑ ${inP.name.split(' ')[0]}</span>
+        <span class="rzb rz${outP.zone}">${outP.spot}</span>
+      </div>
+      <div style="font-size:9px;color:var(--muted)">
+        ${outP.name.split(' ')[0]}: ${fmt(totalLive(outP))} · ${inP.name.split(' ')[0]}: ${fmt(totalLive(inP))}
+        ${deficit>30?`<span style="color:var(--danger)"> · ${fmt(deficit)} behind</span>`:''}
+      </div>
+    </div>`;
+    usedOut.add(outP.id);usedIn.add(inP.id);
+  }
+  const bq=bench.slice(0,5);
+  if(bq.length){
+    html+=`<div class="bqhdr">Bench Queue</div>`;
+    bq.forEach((p,i)=>{
+      const[bg,fg]=ac(p);
+      const deficit=Math.round(avg-totalLive(p));
+      html+=`<div class="bqitem">
+        <div class="bqrank">${i+1}</div>
+        <div class="pavi" style="background:${bg};color:${fg};width:18px;height:18px;font-size:8px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials(p.name)}</div>
+        <div class="bqname">${p.name}</div>
+        <div><div class="bqtime">${fmt(totalLive(p))}</div>${deficit>30?`<div class="bqdef">-${fmt(deficit)}</div>`:''}</div>
+      </div>`;
+    });
+  }
+  wrap.innerHTML=html;
+}
+
+/* ══════════════════════════════════════════
+   LINEUP SUGGESTION ENGINE
+══════════════════════════════════════════ */
+
+// Tracks last zone played per player across quarters
+// p.zoneHistory = ['B','M','F', ...] — one entry per quarter played
+
+let pendingLineup = null; // {spotId: playerId} map
+
+/* Build a fair suggested lineup for the upcoming quarter */
+function buildLineup(seed=0){
+  // Total time so far for each player
+  const ranked = [...players].sort((a,b)=>totalTime(a)-totalTime(b)); // least time first
+
+  // Zone rotation preference: if player played zone Z last quarter, prefer other zones
+  // Zones: B, M, F — 4 spots each
+  const zoneSlots = {B:['B1','B2','B3','B4'], M:['M1','M2','M3','M4'], F:['F1','F2','F3','F4']};
+  const zoneOrder = ['B','M','F'];
+
+  // We need to pick 12 from N players, 4 per zone
+  // Strategy: assign greedily, rotate zone preference to avoid repeats
+  const pick12 = ranked.slice(0+seed, ranked.length); // allow seed to shift who sits out
+  // The 3 sitting out are the ones with most time
+  const totalNeeded = MAX_ON; // 12
+  const eligible = ranked.slice();
+
+  // Score each player for each zone: prefer zone they haven't played recently
+  function zoneScore(p, zone){
+    if(!p.zoneHistory||!p.zoneHistory.length) return 0; // no history = any zone fine
+    const last = p.zoneHistory[p.zoneHistory.length-1];
+    const lastTwo = p.zoneHistory.slice(-2);
+    if(lastTwo.every(z=>z===zone)) return 2; // avoid: same zone 2 qtrs
+    if(last===zone) return 1; // mild penalty: same as last qtr
+    return 0; // fresh zone = preferred
+  }
+
+  // Assign players to zones fairly
+  // First pass: put each player in their preferred zone (fewest repeats)
+  // Respect 4-per-zone cap
+  const assignment = {}; // spotId -> playerId
+  const assigned = new Set();
+  const zoneCount = {B:0, M:0, F:0};
+
+  // Sort by who needs a run most (least time)
+  // Take top 12; last 3 sit out
+  const onField = eligible.slice(0, totalNeeded);
+  // apply seed rotation — shift who sits out
+  const shifted = [...eligible.slice(seed % players.length), ...eligible.slice(0, seed % players.length)];
+  const onFieldFinal = shifted.slice(0, totalNeeded);
+  const benchFinal = shifted.slice(totalNeeded);
+
+  // Distribute into zones with rotation preference
+  // Sort within onFieldFinal: least zone penalty for their preferred zone
+  const zonePref = onFieldFinal.map(p => {
+    const scores = zoneOrder.map(z => ({z, s:zoneScore(p,z)}));
+    scores.sort((a,b)=>a.s-b.s);
+    return {p, prefZone: scores[0].z};
+  });
+
+  // Fill zones respecting preference and caps
+  const zoneAssigned = {B:[], M:[], F:[]};
+  // First pass: honour preferences where possible
+  // Sort by preference strength — those with strong preference go first
+  const sorted = [...zonePref].sort((a,b)=>{
+    const aBest = Math.min(...zoneOrder.map(z=>zoneScore(a.p,z)));
+    const bBest = Math.min(...zoneOrder.map(z=>zoneScore(b.p,z)));
+    return aBest - bBest; // most constrained first
+  });
+
+  sorted.forEach(({p, prefZone}) => {
+    if(assigned.has(p.id)) return;
+    // try preferred zone first, then others
+    const tryZones = [prefZone, ...zoneOrder.filter(z=>z!==prefZone)];
+    for(const z of tryZones){
+      if(zoneAssigned[z].length < MAX_ZONE){
+        zoneAssigned[z].push(p);
+        assigned.add(p.id);
+        break;
+      }
+    }
+  });
+
+  // Map to spots
+  const result = {}; // spotId -> player
+  zoneOrder.forEach(z => {
+    zoneSlots[z].forEach((sid, i) => {
+      if(zoneAssigned[z][i]) result[sid] = zoneAssigned[z][i];
+    });
+  });
+
+  return { assignment: result, bench: benchFinal };
+}
+
+/* Open the lineup suggestion modal */
+function openLineupSuggestion(seed=0){
+  pendingLineup = buildLineup(seed);
+  renderLineupModal(seed);
+  document.getElementById('lineup-overlay').classList.remove('hidden');
+}
+
+function closeLineup(){
+  document.getElementById('lineup-overlay').classList.add('hidden');
+  pendingLineup = null;
+}
+
+function reshuffleLineup(){
+  // Rotate who sits out by shifting seed
+  const currentSeed = (pendingLineup._seed||0) + 1;
+  pendingLineup = buildLineup(currentSeed);
+  pendingLineup._seed = currentSeed;
+  renderLineupModal(currentSeed);
+}
+
+function renderLineupModal(seed=0){
+  const q = currentQ;
+  document.getElementById('lineup-modal-title').textContent = `Suggested Lineup — Q${q}`;
+  document.getElementById('lineup-modal-sub').textContent =
+    `Fairness-based · tap any slot to swap · Q${q} of 4`;
+
+  const {assignment, bench} = pendingLineup;
+
+  // Fairness score: spread between max and min projected time after this quarter
+  const projectedTimes = players.map(p=>{
+    const assigned = Object.values(assignment).find(x=>x.id===p.id);
+    return totalTime(p) + (assigned ? Q_SECS : 0);
+  });
+  const spread = Math.max(...projectedTimes) - Math.min(...projectedTimes);
+  const fairPct = Math.max(0, Math.round((1 - spread/Q_SECS)*100));
+  const fairCls = fairPct>=75?'good':fairPct>=50?'warn':'danger';
+  document.getElementById('lineup-fairness').innerHTML=`
+    <div class="lf-label">Projected fairness</div>
+    <div class="lf-bar-wrap"><div class="lf-bar" style="width:${fairPct}%;background:${fairPct>=75?'var(--good)':fairPct>=50?'var(--warn)':'var(--danger)'}"></div></div>
+    <div class="lf-score ${fairCls}">${fairPct}%</div>`;
+
+  // Zone columns
+  const zoneSlots = {B:['B1','B2','B3','B4'], M:['M1','M2','M3','M4'], F:['F1','F2','F3','F4']};
+  const zoneNames = {B:'Back',M:'Midfield',F:'Forward'};
+  const zoneColors = {B:'zB',M:'zM',F:'zF'};
+  let zonesHtml = '';
+  ['B','M','F'].forEach(z=>{
+    zonesHtml += `<div class="lineup-zone">
+      <div class="lz-title ${zoneColors[z]}">${zoneNames[z]} <span style="font-size:9px;color:var(--muted);font-weight:400">${zoneAssigned(z,assignment)}/4</span></div>`;
+    zoneSlots[z].forEach(sid=>{
+      const p = assignment[sid];
+      const posN = POS_NAMES[sid];
+      if(p){
+        const[bg,fg]=ac(p);
+        const lastZ = p.zoneHistory?.slice(-1)[0];
+        const rotTag = lastZ === z
+          ? `<span class="zone-rot zr-same" title="Same zone as last quarter">=${z}</span>`
+          : `<span class="zone-rot zr-new" title="Zone rotation">↺${z}</span>`;
+        zonesHtml += `<div class="lineup-slot" onclick="openSlotPicker('${sid}')">
+          <div class="ls-spot">${sid}</div>
+          <div class="ls-avi" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+          <div class="ls-info">
+            <div class="ls-name">${p.name.split(' ')[0]} <span style="font-size:8px;color:var(--muted)">${p.name.split(' ').slice(1).join(' ')}</span></div>
+            <div class="ls-detail">${posN}${rotTag}</div>
+          </div>
+          <div class="ls-time">${fmt(totalTime(p))}</div>
+        </div>`;
+      } else {
+        zonesHtml += `<div class="lineup-slot" onclick="openSlotPicker('${sid}')" style="opacity:.5">
+          <div class="ls-spot">${sid}</div>
+          <div class="ls-avi" style="background:rgba(255,255,255,.1);color:var(--muted)">?</div>
+          <div class="ls-info"><div class="ls-name" style="color:var(--muted)">Empty — tap to assign</div></div>
+        </div>`;
+      }
+    });
+    zonesHtml += `</div>`;
+  });
+  document.getElementById('lineup-zones').innerHTML = zonesHtml;
+
+  // Bench section
+  let benchHtml = `<div class="lb-title">Sitting out this quarter</div><div class="lb-chips">`;
+  bench.forEach(p=>{
+    const[bg,fg]=ac(p);
+    benchHtml += `<div class="lb-chip">
+      <div class="ls-avi" style="background:${bg};color:${fg};width:22px;height:22px;font-size:9px">${initials(p.name)}</div>
+      <div class="lb-chip-name">${p.name.split(' ')[0]}</div>
+      <div class="lb-chip-time">${fmt(totalTime(p))}</div>
+    </div>`;
+  });
+  benchHtml += `</div>`;
+  document.getElementById('lineup-bench-section').innerHTML = benchHtml;
+}
+
+function zoneAssigned(z, assignment){
+  const spots = {B:['B1','B2','B3','B4'],M:['M1','M2','M3','M4'],F:['F1','F2','F3','F4']};
+  return spots[z].filter(s=>assignment[s]).length;
+}
+
+/* Apply the pending lineup to the actual game state */
+function approveLineup(){
+  if(!pendingLineup) return;
+  const {assignment} = pendingLineup;
+
+  // Clear current field
+  players.forEach(p=>{
+    bankTime(p);
+    p.spot=null; p.onField=false; p.lastToggle=null; p.fieldSince=null;
+  });
+
+  // Apply assignments
+  Object.entries(assignment).forEach(([spotId, p])=>{
+    if(!p) return;
+    const player = players.find(x=>x.id===p.id);
+    if(!player) return;
+    player.spot = spotId;
+    player.zone = SPOT_ZONE[spotId];
+    player.onField = true;
+    if(timerRunning){ player.lastToggle=Date.now(); player.fieldSince=Date.now(); }
+  });
+
+  closeLineup();
+  renderAll();
+  autoSave();
+  toast('✓ Lineup applied — tap spots to adjust');
+}
+
+/* Open slot picker to change one slot in the pending lineup */
+let activeSlotSpot = null;
+function openSlotPicker(spotId){
+  activeSlotSpot = spotId;
+  const posN = POS_NAMES[spotId];
+  const zone = SPOT_ZONE[spotId];
+  document.getElementById('sp-title').textContent = `${posN}`;
+  document.getElementById('sp-sub').textContent = `Choose who plays ${POS_NAMES[spotId]}`;
+
+  // Already assigned in this pending lineup (excluding current slot)
+  const takenIds = new Set(
+    Object.entries(pendingLineup.assignment)
+      .filter(([s])=>s!==spotId)
+      .map(([,p])=>p?.id)
+      .filter(Boolean)
+  );
+
+  const sorted = [...players].sort((a,b)=>totalTime(a)-totalTime(b));
+  document.getElementById('sp-list').innerHTML = sorted.map(p=>{
+    const[bg,fg]=ac(p);
+    const taken = takenIds.has(p.id);
+    const current = pendingLineup.assignment[spotId]?.id===p.id;
+    const lastZ = p.zoneHistory?.slice(-1)[0];
+    const sameZone = lastZ===zone;
+    return `<button class="sp-btn${taken?' disabled':''}" onclick="${taken?'':` pickSlotPlayer(${p.id})`}">
+      <div class="pavi" style="background:${taken?'#333':bg};color:${taken?'#555':fg};width:24px;height:24px;font-size:9px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials(p.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600">${p.name}</div>
+        <div style="font-size:9px;color:var(--muted)">${taken?'Already placed':current?'✓ Current pick':sameZone?'Same zone as last Q':''}</div>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--gold)">${fmt(totalTime(p))}</div>
+    </button>`;
+  }).join('');
+  document.getElementById('slot-picker').classList.remove('hidden');
+}
+
+function pickSlotPlayer(playerId){
+  if(!activeSlotSpot||!pendingLineup) return;
+  const p = players.find(x=>x.id===playerId);
+  if(!p) return;
+
+  // If this player was already in another slot, swap them out
+  const prevSlot = Object.entries(pendingLineup.assignment).find(([,v])=>v?.id===playerId)?.[0];
+  const displaced = prevSlot ? pendingLineup.assignment[prevSlot] : null;
+  const currentOccupant = pendingLineup.assignment[activeSlotSpot];
+
+  // Swap if both spots were filled
+  if(prevSlot) pendingLineup.assignment[prevSlot] = currentOccupant||null;
+  pendingLineup.assignment[activeSlotSpot] = p;
+
+  closeSlotPicker();
+  renderLineupModal(pendingLineup._seed||0);
+}
+function closeSlotPicker(){
+  document.getElementById('slot-picker').classList.add('hidden');
+  activeSlotSpot = null;
+}
+
+/* ─── RENDER ALL ─── */
+function renderAll(){
+  document.getElementById('qbar').innerHTML=[1,2,3,4].map(q=>
+    `<div class="qbtn${q===currentQ?' active':quarterDone[q-1]?' done':''}" onclick="selectQ(${q})">${quarterDone[q-1]?'✓ ':''}Q${q}</div>`
+  ).join('');
+  updateOval();updateStats();renderBench();
+  if(document.getElementById('rot-drawer').classList.contains('open'))renderRotation();
+}
+
+/* ─── CLOCK TICK ─── */
+function tickClocks(){
+  if(!timerRunning)return;
+  players.filter(p=>p.onField&&p.spot).forEach(p=>{
+    const el=document.getElementById('ptok-'+p.id);if(el)el.textContent=fmt(totalLive(p));
+  });
+  // only update bench time display for players truly on the bench (not placed on field)
+  players.filter(p=>!p.onField).forEach(p=>{
+    const el=document.getElementById('btime-'+p.id);if(el)el.textContent=fmt(totalLive(p));
+  });
+  updateStats();
+  if(timerSecs%10===0&&document.getElementById('rot-drawer').classList.contains('open'))renderRotation();
+}
+
+/* ─── TIMER ─── */
+function selectQ(q){
+  if(timerRunning)return;
+  currentQ=q;timerSecs=0;
+  document.getElementById('tdisp').textContent='0:00';
+  document.getElementById('tlbl').textContent=`Q${q} — drag players to positions`;
+  renderAll();
+}
+function startTimer(){
+  if(timerRunning)return;
+  timerRunning=true;
+  const now=Date.now();
+  players.filter(p=>p.onField).forEach(p=>{p.lastToggle=now;if(!p.fieldSince)p.fieldSince=now});
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-pause').disabled=false;
+  document.getElementById('tlbl').textContent=`Q${currentQ} — in progress`;
+  timerInterval=setInterval(()=>{
+    timerSecs++;
+    document.getElementById('tdisp').textContent=fmt(timerSecs);
+    tickClocks();
+    if(timerSecs>=Q_SECS)document.getElementById('tlbl').textContent=`Q${currentQ} — time's up!`;
+  },1000);
+}
+function pauseTimer(){
+  if(!timerRunning)return;
+  clearInterval(timerInterval);timerRunning=false;
+  const now=Date.now();
+  players.filter(p=>p.onField).forEach(p=>{
+    if(p.lastToggle){const s=Math.round((now-p.lastToggle)/1000);p.timeByQ[currentQ]=(p.timeByQ[currentQ]||0)+s;p.zoneTime[p.zone]=(p.zoneTime[p.zone]||0)+s}
+    p.lastToggle=null;p.fieldSince=null;
+  });
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-pause').disabled=true;
+  document.getElementById('tlbl').textContent=`Q${currentQ} — paused`;
+  renderAll();
+  autoSave();
+}
+function endQuarter(){
+  pauseTimer();
+  quarterDone[currentQ-1]=true;
+  // Record zone history for each player before clearing
+  players.forEach(p=>{
+    if(!p.zoneHistory) p.zoneHistory=[];
+    if(p.onField) p.zoneHistory.push(p.zone);
+    p.spot=null;p.onField=false;p.lastToggle=null;p.fieldSince=null;
+  });
+  if(currentQ<4)currentQ++;
+  timerSecs=0;
+  document.getElementById('tdisp').textContent='0:00';
+  document.getElementById('tlbl').textContent=`Q${currentQ} — set new lineup`;
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('rot-drawer').classList.remove('open');
+  renderAll();renderReport();
+  autoSave();
+  // Auto-suggest next lineup after a brief delay
+  if(currentQ<=4 && !quarterDone[currentQ-1]){
+    setTimeout(()=>openLineupSuggestion(0), 400);
+  }
+}
+
+/* ─── ROSTER ─── */
+function addPlayer(){
+  const inp=document.getElementById('new-name');
+  const name=inp.value.trim();if(!name)return;
+  players.push(mkP(name,players.length));inp.value='';renderRoster();autoSave();
+}
+function removePlayer(id){
+  const p=players.find(x=>x.id===id);
+  if(p&&p.onField){toast('Sub off first');return}
+  players=players.filter(x=>x.id!==id);renderRoster();autoSave();
+}
+function renderRoster(){
+  document.getElementById('squad-info').textContent=`${players.length} players · ${Math.max(0,players.length-MAX_ON)} on bench per quarter`;
+  document.getElementById('roster-grid').innerHTML=players.map(p=>{
+    const[bg,fg]=ac(p);
+    return`<div class="rcard">
+      <div class="rcavi" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+      <div class="rcname">${p.name}</div>
+      <button class="delbtn" onclick="removePlayer(${p.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/* ─── REPORT ─── */
+function renderReport(){
+  const qdone=[1,2,3,4].filter((_,i)=>quarterDone[i]).length;
+  const sorted=[...players].sort((a,b)=>totalTime(b)-totalTime(a));
+  const times=sorted.map(totalTime);
+  const maxT=Math.max(...times,1);
+  const avgT=Math.round(times.reduce((s,v)=>s+v,0)/Math.max(times.length,1));
+  document.getElementById('rep-stats').innerHTML=[
+    ['Players',players.length],['Quarters',qdone],
+    ['Avg time',fmt(avgT)],['Max time',fmt(qdone*Q_SECS)]
+  ].map(([l,v])=>`<div class="sb"><div class="sv">${v}</div><div class="sl">${l}</div></div>`).join('');
+  document.getElementById('rep-scroll').innerHTML=sorted.map(p=>{
+    const t=totalTime(p);
+    const pct=Math.round((t/maxT)*100);
+    const bar=t>=avgT?'#4caf72':'#e05252';
+    const zones=['F','M','B'].filter(z=>p.zoneTime[z]>0);
+    const[bg,fg]=ac(p);
+    return`<div class="repcard">
+      <div class="rpid">
+        <div class="rcavi" style="background:${bg};color:${fg};width:28px;height:28px;font-size:10px">${initials(p.name)}</div>
+        <div><div class="rpname">${p.name}</div><div class="rptot">${fmt(t)}</div></div>
+      </div>
+      <div>
+        <div class="btrack"><div class="bfill" style="width:${pct}%;background:${bar}"></div></div>
+        <div class="rpqs">${[1,2,3,4].map(q=>`<span class="rpq">Q${q}: ${fmt(p.timeByQ[q]||0)}</span>`).join('')}</div>
+      </div>
+      <div class="rpzones">
+        ${zones.map(z=>`<span class="rpzb" style="${z==='F'?'background:rgba(144,128,248,.25);color:#b0a8f8':z==='M'?'background:rgba(80,212,144,.2);color:#50d490':'background:rgba(224,112,80,.25);color:#e07050'}">${z==='F'?'Fwd':z==='M'?'Mid':'Bck'} ${fmt(p.zoneTime[z])}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function copyReport(){
+  renderReport();
+  const sorted=[...players].sort((a,b)=>totalTime(b)-totalTime(a));
+  const avgT=Math.round(sorted.map(totalTime).reduce((s,v)=>s+v,0)/Math.max(sorted.length,1));
+  const qdone=[1,2,3,4].filter((_,i)=>quarterDone[i]).length;
+  let txt=`🏉 AFL Under 9 & 10 — Game Summary\n12-a-side | 4 per zone | 10 min quarters\nQuarters: ${qdone} | Squad: ${players.length} | Avg: ${fmt(avgT)}\n${'─'.repeat(38)}\n\n`;
+  sorted.forEach(p=>{
+    txt+=`${p.name}: ${fmt(totalTime(p))}\n  Q1:${fmt(p.timeByQ[1]||0)} Q2:${fmt(p.timeByQ[2]||0)} Q3:${fmt(p.timeByQ[3]||0)} Q4:${fmt(p.timeByQ[4]||0)}\n`;
+    const z=['F','M','B'].filter(z=>p.zoneTime[z]>0);
+    if(z.length)txt+=`  ${z.map(z=>`${z==='F'?'Fwd':z==='M'?'Mid':'Back'}:${fmt(p.zoneTime[z])}`).join(' ')}\n`;
+    txt+='\n';
+  });
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('✅ Copied for parents!'))}
+  else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ Copied!')}
+}
+
+/* ══════════════════════════════════════════
+   SAVE / LOAD / EXPORT / IMPORT
+══════════════════════════════════════════ */
+
+const SAVE_KEY = 'afl_tracker_v2';
+
+/* Serialise current state to a plain object */
+function buildSaveState(){
+  return {
+    savedAt: new Date().toISOString(),
+    version: 1,
+    currentQ,
+    timerSecs,
+    quarterDone: [...quarterDone],
+    players: players.map(p=>({
+      id: p.id,
+      name: p.name,
+      ci: p.ci,
+      onField: p.onField,
+      zone: p.zone,
+      spot: p.spot,
+      timeByQ: {...p.timeByQ},
+      zoneTime: {...p.zoneTime},
+      zoneHistory: p.zoneHistory ? [...p.zoneHistory] : [],
+      // Don't save lastToggle/fieldSince — they're transient runtime refs
+    }))
+  };
+}
+
+/* Restore state from a plain object */
+function applyState(state){
+  if(!state||state.version!==1) return false;
+  currentQ = state.currentQ || 1;
+  timerSecs = state.timerSecs || 0;
+  quarterDone = state.quarterDone || [false,false,false,false];
+  players = (state.players||[]).map(p=>({
+    ...mkP(p.name, p.ci||0),   // creates fresh object with defaults
+    id: p.id,
+    name: p.name,
+    ci: p.ci,
+    onField: p.onField||false,
+    zone: p.zone||'M',
+    spot: p.spot||null,
+    timeByQ: p.timeByQ||{1:0,2:0,3:0,4:0},
+    zoneTime: p.zoneTime||{F:0,M:0,B:0},
+    zoneHistory: p.zoneHistory||[],
+    lastToggle: null,
+    fieldSince: null,
+  }));
+  return true;
+}
+
+/* Save to localStorage */
+function saveGame(){
+  try{
+    const state = buildSaveState();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    updateSaveStatus(state.savedAt);
+    toast('💾 Saved!');
+  } catch(e){
+    toast('⚠ Could not save — storage may be full');
+  }
+}
+
+/* Auto-save silently (called after key state changes) */
+function autoSave(){
+  try{
+    const state = buildSaveState();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    updateSaveStatus(state.savedAt);
+  } catch(e){ /* silent */ }
+}
+
+/* Load from localStorage on startup */
+function loadSavedGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const state = JSON.parse(raw);
+    if(applyState(state)){
+      updateSaveStatus(state.savedAt);
+      return true;
+    }
+  } catch(e){ /* corrupt data — ignore */ }
+  return false;
+}
+
+/* Update the "last saved" label */
+function updateSaveStatus(isoString){
+  const el = document.getElementById('save-status');
+  if(!el) return;
+  try{
+    const d = new Date(isoString);
+    const time = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const date = d.toLocaleDateString([],{day:'numeric',month:'short'});
+    el.textContent = `Saved ${date} ${time}`;
+  } catch(e){
+    el.textContent = 'Saved';
+  }
+}
+
+/* Export game state as a downloadable JSON file */
+function exportJSON(){
+  const state = buildSaveState();
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `afl-tracker-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('⬇ Game exported!');
+}
+
+/* Import a JSON file */
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const state = JSON.parse(e.target.result);
+      if(applyState(state)){
+        saveGame(); // immediately persist the imported state
+        renderRoster();
+        renderAll();
+        renderReport();
+        updateSaveStatus(state.savedAt);
+        toast('✅ Game imported!');
+      } else {
+        toast('⚠ Invalid save file');
+      }
+    } catch(err){
+      toast('⚠ Could not read file');
+    }
+    // Reset the input so the same file can be re-imported if needed
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* Reset everything for a brand new game */
+function newGame(){
+  if(!confirm('Start a new game? All current game data will be cleared.')) return;
+  localStorage.removeItem(SAVE_KEY);
+  currentQ = 1;
+  timerSecs = 0;
+  quarterDone = [false,false,false,false];
+  if(timerRunning){ clearInterval(timerInterval); timerRunning = false; }
+  // Keep the squad names but reset all game stats
+  players.forEach(p=>{
+    p.onField=false; p.zone='M'; p.spot=null;
+    p.timeByQ={1:0,2:0,3:0,4:0};
+    p.zoneTime={F:0,M:0,B:0};
+    p.zoneHistory=[];
+    p.lastToggle=null; p.fieldSince=null;
+  });
+  document.getElementById('save-status').textContent='Not saved yet';
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-pause').disabled=true;
+  document.getElementById('tdisp').textContent='0:00';
+  document.getElementById('tlbl').textContent='Drag players onto the oval';
+  renderRoster(); renderAll(); renderReport();
+  toast('🆕 New game started');
+}
+
+/* ─── TAB NAV ─── */
+function showTab(name,btn){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='report')renderReport();
+  if(name==='game')renderAll();
+}
+
+/* ─── INIT ─── */
+updateOrient();
+// Clear any old version save data so fresh squad always loads
+localStorage.removeItem('afl_tracker_v1');
+// Try to restore a previously saved game; fall back to default squad
+const restored = loadSavedGame();
+if(!restored){
+  // First run — squad is already populated from SQUAD constant above
+}
+renderRoster();
+renderAll();
+
+/* ─── SERVICE WORKER REGISTRATION ─── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+/* ─── IOS INSTALL BANNER ─── */
+// Show a one-time nudge to add to home screen on iOS Safari
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) }
+function isInStandaloneMode(){ return window.navigator.standalone === true }
+function showInstallBanner(){
+  if(!isIOS()||isInStandaloneMode()) return;
+  if(localStorage.getItem('afl_install_dismissed')) return;
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:calc(20px + var(--safe-bot));left:50%;transform:translateX(-50%);
+    background:rgba(15,35,20,0.97);border:1px solid rgba(240,180,41,0.5);
+    border-radius:12px;padding:12px 16px;z-index:999;
+    font-family:'Barlow',sans-serif;font-size:13px;color:#f0ebe0;
+    max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    display:flex;align-items:flex-start;gap:10px;
+  `;
+  banner.innerHTML = `
+    <span style="font-size:22px;flex-shrink:0">🏉</span>
+    <div style="flex:1">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#f0b429;margin-bottom:3px">Add to Home Screen</div>
+      <div style="font-size:11px;color:#7a9a80;line-height:1.4">
+        Tap <strong style="color:#f0ebe0">Share</strong> then <strong style="color:#f0ebe0">Add to Home Screen</strong> for the full app experience — works offline too.
+      </div>
+    </div>
+    <button onclick="dismissInstallBanner()" style="background:none;border:none;color:#7a9a80;font-size:18px;cursor:pointer;flex-shrink:0;padding:2px;line-height:1">✕</button>
+  `;
+  document.body.appendChild(banner);
+}
+function dismissInstallBanner(){
+  localStorage.setItem('afl_install_dismissed','1');
+  const b = document.getElementById('install-banner');
+  if(b) b.remove();
+}
+// Show after 3 seconds so it doesn't interrupt first load
+setTimeout(showInstallBanner, 3000);
+</script>
+</body>
+</html>
